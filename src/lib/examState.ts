@@ -7,11 +7,13 @@ export interface ExamState {
   flagsMCQ: string[];
   startTime: number;
   mode: ExamMode;
-  submitted: boolean;
+  currentSet: string;
+  pbqSubmitted: boolean;
+  mcqSubmitted: boolean;
 }
 
 const STORAGE_KEY = 'secplus-exam-state';
-const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export function createFreshState(): ExamState {
   return {
@@ -21,7 +23,9 @@ export function createFreshState(): ExamState {
     flagsMCQ: [],
     startTime: Date.now(),
     mode: 'both',
-    submitted: false,
+    currentSet: 'A',
+    pbqSubmitted: false,
+    mcqSubmitted: false,
   };
 }
 

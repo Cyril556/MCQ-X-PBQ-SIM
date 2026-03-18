@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PBQQuestion } from '@/data/pbq';
-import { Flag, CheckCircle2, XCircle } from 'lucide-react';
+import { Flag, CheckCircle2, XCircle, Info } from 'lucide-react';
 
 interface PBQSectionProps {
   questions: PBQQuestion[];
@@ -9,11 +9,20 @@ interface PBQSectionProps {
   onAnswer: (questionId: string, answer: any) => void;
   onToggleFlag: (questionId: string) => void;
   submitted: boolean;
+  onSubmit: () => void;
 }
 
-export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, submitted }: PBQSectionProps) {
+export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, submitted, onSubmit }: PBQSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const question = questions[currentIndex];
+
+  const answeredCount = questions.filter(q => {
+    const ans = answers[q.id];
+    if (!ans) return false;
+    if (Array.isArray(ans)) return ans.some(a => a !== '');
+    if (typeof ans === 'object') return Object.keys(ans).length > 0;
+    return true;
+  }).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,6 +106,17 @@ export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
             />
           )}
 
+          {/* Explanation after submission */}
+          {submitted && question.explanation && (
+            <div className="mt-4 p-4 rounded-md border border-accent/30 bg-accent/5 animate-fade-in">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-accent" />
+                <p className="text-xs font-mono text-accent uppercase font-bold">Explanation</p>
+              </div>
+              <p className="text-sm text-muted-foreground">{question.explanation}</p>
+            </div>
+          )}
+
           {/* Prev / Next */}
           <div className="flex justify-between mt-6">
             <button
@@ -114,6 +134,21 @@ export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
               Next
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Check Answers button */}
+      {!submitted && (
+        <div className="flex flex-col items-center gap-2 mt-2">
+          <p className="text-xs text-muted-foreground font-mono">
+            {answeredCount}/{questions.length} answered
+          </p>
+          <button
+            onClick={onSubmit}
+            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg"
+          >
+            Check Answers
+          </button>
         </div>
       )}
     </div>
@@ -241,13 +276,11 @@ function MatchingPBQ({
     setDragItem(null);
   };
 
-  // Unassigned items
   const assignedSources = Object.keys(answer);
   const unassigned = items.filter((it) => !assignedSources.includes(it.source));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Source items */}
       <div>
         <h4 className="text-xs font-mono text-muted-foreground mb-3 uppercase tracking-wider">Items to match</h4>
         <div className="flex flex-col gap-2">
@@ -270,7 +303,6 @@ function MatchingPBQ({
         </div>
       </div>
 
-      {/* Target zones */}
       <div>
         <h4 className="text-xs font-mono text-muted-foreground mb-3 uppercase tracking-wider">Categories</h4>
         <div className="flex flex-col gap-3">
@@ -301,6 +333,9 @@ function MatchingPBQ({
                         }`}
                       >
                         {it.source}
+                        {submitted && wrong && (
+                          <span className="ml-1 text-success font-mono text-[10px]">→ {it.target}</span>
+                        )}
                         {!submitted && (
                           <button
                             onClick={() => {
@@ -354,7 +389,6 @@ function ClassificationPBQ({
 
   return (
     <div className="space-y-4">
-      {/* Unassigned */}
       <div>
         <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Items to classify</h4>
         <div className="flex flex-wrap gap-2">
@@ -374,7 +408,6 @@ function ClassificationPBQ({
         </div>
       </div>
 
-      {/* Category zones */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {categories.map((cat) => {
           const assignedHere = items.filter((it) => answer[it.item] === cat);
@@ -399,6 +432,9 @@ function ClassificationPBQ({
                       }`}
                     >
                       {it.item}
+                      {submitted && wrong && (
+                        <span className="ml-1 text-success font-mono text-[10px]">→ {it.category}</span>
+                      )}
                       {!submitted && (
                         <button onClick={() => { const n = { ...answer }; delete n[it.item]; onAnswer(n); }} className="ml-1 text-muted-foreground hover:text-foreground" aria-label={`Remove ${it.item}`}>×</button>
                       )}
@@ -484,6 +520,9 @@ function PlacementPBQ({
                       }`}
                     >
                       {it.item}
+                      {submitted && wrong && (
+                        <span className="ml-1 text-success font-mono text-[10px]">→ {it.correctZone}</span>
+                      )}
                       {!submitted && (
                         <button onClick={() => { const n = { ...answer }; delete n[it.item]; onAnswer(n); }} className="ml-1 text-muted-foreground hover:text-foreground" aria-label={`Remove ${it.item}`}>×</button>
                       )}

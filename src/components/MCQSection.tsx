@@ -1,15 +1,6 @@
 import { useState } from 'react';
-import { Flag, CheckCircle2, XCircle } from 'lucide-react';
-
-export interface MCQItem {
-  id: string;
-  domain: string;
-  question: string;
-  type: 'single' | 'multiple';
-  options: string[];
-  answer: number | number[];
-  explanation: string;
-}
+import { Flag, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { MCQItem } from '@/data/mcq';
 
 interface MCQSectionProps {
   questions: MCQItem[];
@@ -18,9 +9,10 @@ interface MCQSectionProps {
   onAnswer: (questionId: string, answer: number | number[]) => void;
   onToggleFlag: (questionId: string) => void;
   submitted: boolean;
+  onSubmit: () => void;
 }
 
-export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, submitted }: MCQSectionProps) {
+export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, submitted, onSubmit }: MCQSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const question = questions[currentIndex];
 
@@ -51,7 +43,20 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
     }
   };
 
-  const showFeedback = hasAnswered || submitted;
+  // Show feedback only after submission
+  const showFeedback = submitted;
+
+  // Check if current question is correct (for submitted state)
+  const isCurrentCorrect = () => {
+    if (!hasAnswered) return false;
+    if (question.type === 'single') return currentAnswer === question.answer;
+    const sel = [...(currentAnswer as number[])].sort();
+    const cor = [...(question.answer as number[])].sort();
+    return JSON.stringify(sel) === JSON.stringify(cor);
+  };
+
+  const isLastQuestion = currentIndex === questions.length - 1;
+  const answeredCount = questions.filter(q => answers[q.id] !== undefined).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -134,10 +139,17 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
           })}
         </div>
 
-        {/* Explanation */}
+        {/* Explanation after submission */}
         {showFeedback && (
-          <div className="mt-4 p-4 rounded-md bg-muted/30 border border-border animate-fade-in">
-            <p className="text-xs font-mono text-accent mb-1 uppercase">Explanation</p>
+          <div className={`mt-4 p-4 rounded-md border animate-fade-in ${
+            isCurrentCorrect() ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'
+          }`}>
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="h-4 w-4 text-accent" />
+              <p className="text-xs font-mono text-accent uppercase font-bold">
+                {isCurrentCorrect() ? '✓ Correct' : '✗ Incorrect'}
+              </p>
+            </div>
             <p className="text-sm text-muted-foreground">{question.explanation}</p>
           </div>
         )}
@@ -160,6 +172,21 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
           </button>
         </div>
       </div>
+
+      {/* Check Answers button */}
+      {!submitted && (
+        <div className="flex flex-col items-center gap-2 mt-2">
+          <p className="text-xs text-muted-foreground font-mono">
+            {answeredCount}/{questions.length} answered
+          </p>
+          <button
+            onClick={onSubmit}
+            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg"
+          >
+            Check Answers
+          </button>
+        </div>
+      )}
     </div>
   );
 }
