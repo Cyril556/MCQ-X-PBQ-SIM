@@ -1,0 +1,137 @@
+[
+  {
+    "id": "iam1",
+    "domain": "Identity and Access Management",
+    "question": "Which MFA method provides the strongest resistance to phishing?",
+    "type": "single",
+    "options": ["SMS OTP", "Email OTP", "Hardware FIDO2 security key", "Push notification"],
+    "answer": 2,
+    "explanation": "FIDO2/WebAuthn hardware security keys use cryptographic challenge-response bound to the origin, making them immune to phishing attacks unlike SMS, email, or push-based methods."
+  },
+  {
+    "id": "iam2",
+    "domain": "Identity and Access Management",
+    "question": "Which access control model uses labels such as 'Top Secret' and 'Confidential' to restrict access?",
+    "type": "single",
+    "options": ["Role-Based Access Control (RBAC)", "Mandatory Access Control (MAC)", "Discretionary Access Control (DAC)", "Attribute-Based Access Control (ABAC)"],
+    "answer": 1,
+    "explanation": "MAC uses classification labels assigned by administrators. Users cannot change permissions; access is determined by comparing the user's clearance with the resource's classification."
+  },
+  {
+    "id": "fw1",
+    "domain": "Firewall & ACL Configuration",
+    "question": "Select all ports that should be allowed inbound to a web server in a DMZ.",
+    "type": "multiple",
+    "options": ["22 (SSH)", "80 (HTTP)", "443 (HTTPS)", "3306 (MySQL)"],
+    "answer": [1, 2],
+    "explanation": "Only HTTP (80) and HTTPS (443) should be exposed inbound to a DMZ web server. SSH should be restricted to management networks, and MySQL should never be directly exposed."
+  },
+  {
+    "id": "crypto1",
+    "domain": "Cryptography",
+    "question": "Which algorithm is an asymmetric encryption algorithm?",
+    "type": "single",
+    "options": ["AES-256", "RSA", "SHA-256", "3DES"],
+    "answer": 1,
+    "explanation": "RSA is an asymmetric (public-key) algorithm. AES and 3DES are symmetric block ciphers, and SHA-256 is a hashing algorithm, not encryption."
+  },
+  {
+    "id": "crypto2",
+    "domain": "Cryptography",
+    "question": "Which of the following are hashing algorithms? (Select all that apply)",
+    "type": "multiple",
+    "options": ["MD5", "AES", "SHA-256", "RSA"],
+    "answer": [0, 2],
+    "explanation": "MD5 and SHA-256 are hashing algorithms that produce fixed-length digests. AES is symmetric encryption and RSA is asymmetric encryption."
+  },
+  {
+    "id": "net1",
+    "domain": "Network Security",
+    "question": "What is the primary purpose of a VLAN?",
+    "type": "single",
+    "options": ["Encrypt network traffic", "Segment broadcast domains", "Provide wireless access", "Monitor network traffic"],
+    "answer": 1,
+    "explanation": "VLANs logically segment a physical network into separate broadcast domains, limiting broadcast traffic and improving security by isolating groups of devices."
+  },
+  {
+    "id": "net2",
+    "domain": "Network Security",
+    "question": "Which protocol is used to securely access a remote command line?",
+    "type": "single",
+    "options": ["Telnet", "FTP", "SSH", "SNMP"],
+    "answer": 2,
+    "explanation": "SSH (Secure Shell) encrypts the session, providing confidentiality and integrity for remote CLI access. Telnet transmits in cleartext and should never be used."
+  },
+  {
+    "id": "threat1",
+    "domain": "Threats & Vulnerabilities",
+    "question": "What type of attack involves an attacker inserting themselves between two communicating parties?",
+    "type": "single",
+    "options": ["Phishing", "On-path (Man-in-the-Middle)", "SQL Injection", "Cross-Site Scripting"],
+    "answer": 1,
+    "explanation": "An on-path (MitM) attack positions the attacker between two parties to intercept, modify, or eavesdrop on communications without either party's knowledge."
+  },
+  {
+    "id": "threat2",
+    "domain": "Threats & Vulnerabilities",
+    "question": "Which of the following are social engineering techniques? (Select all that apply)",
+    "type": "multiple",
+    "options": ["Pretexting", "Buffer overflow", "Tailgating", "SQL injection"],
+    "answer": [0, 2],
+    "explanation": "Pretexting (creating a fabricated scenario) and tailgating (following someone through a secure door) are social engineering. Buffer overflow and SQL injection are technical attacks."
+  },
+  {
+    "id": "ops1",
+    "domain": "Security Operations",
+    "question": "What is the first step in the incident response process?",
+    "type": "single",
+    "options": ["Containment", "Eradication", "Preparation", "Identification"],
+    "answer": 2,
+    "explanation": "Preparation is the first phase of incident response (NIST SP 800-61). It involves establishing policies, procedures, teams, and tools before an incident occurs."
+  },
+  {
+    "id": "ops2",
+    "domain": "Security Operations",
+    "question": "Which log source would be MOST useful for detecting unauthorized login attempts?",
+    "type": "single",
+    "options": ["Firewall logs", "Authentication server logs", "DNS logs", "DHCP logs"],
+    "answer": 1,
+    "explanation": "Authentication server logs record all login attempts (successful and failed), making them the best source for detecting brute force or unauthorized access attempts."
+  },
+  {
+    "id": "arch1",
+    "domain": "Security Architecture",
+    "question": "Which security concept ensures that a user has only the minimum permissions needed to perform their job?",
+    "type": "single",
+    "options": ["Separation of duties", "Least privilege", "Defense in depth", "Zero trust"],
+    "answer": 1,
+    "explanation": "The principle of least privilege limits user access rights to the bare minimum needed for their role, reducing the attack surface if an account is compromised."
+  },
+  {
+    "id": "arch2",
+    "domain": "Security Architecture",
+    "question": "Select all components of a Zero Trust architecture. (Select all that apply)",
+    "type": "multiple",
+    "options": ["Micro-segmentation", "Implicit trust for internal users", "Continuous verification", "Perimeter-only security"],
+    "answer": [0, 2],
+    "explanation": "Zero Trust relies on micro-segmentation and continuous verification. It explicitly rejects implicit trust and perimeter-only security models."
+  },
+  {
+    "id": "comp1",
+    "domain": "Governance & Compliance",
+    "question": "Which regulation specifically protects the privacy of health information in the United States?",
+    "type": "single",
+    "options": ["GDPR", "PCI-DSS", "HIPAA", "SOX"],
+    "answer": 2,
+    "explanation": "HIPAA (Health Insurance Portability and Accountability Act) establishes standards for protecting sensitive patient health information in the US."
+  },
+  {
+    "id": "comp2",
+    "domain": "Governance & Compliance",
+    "question": "What is the purpose of a Business Impact Analysis (BIA)?",
+    "type": "single",
+    "options": ["Identify network vulnerabilities", "Assess the impact of disruptions on business functions", "Test incident response procedures", "Audit user access controls"],
+    "answer": 1,
+    "explanation": "A BIA identifies critical business functions and assesses the potential impact of disruptions, helping prioritize recovery efforts and determine RTO/RPO values."
+  }
+]
