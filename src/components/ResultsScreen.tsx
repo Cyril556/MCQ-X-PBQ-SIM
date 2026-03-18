@@ -1,16 +1,15 @@
-import { Trophy, Clock, Target, BarChart3 } from 'lucide-react';
+import { Trophy, Target, BarChart3 } from 'lucide-react';
 import { PBQQuestion } from '@/data/pbq';
-import { MCQItem } from '@/components/MCQSection';
+import { MCQItem } from '@/data/mcq';
 
 interface ResultsScreenProps {
   pbqQuestions: PBQQuestion[];
   mcqQuestions: MCQItem[];
   pbqAnswers: Record<string, any>;
   mcqAnswers: Record<string, number | number[]>;
-  startTime: number;
 }
 
-export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswers, startTime }: ResultsScreenProps) {
+export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswers }: ResultsScreenProps) {
   // Score PBQ
   let pbqCorrect = 0;
   pbqQuestions.forEach((q) => {
@@ -48,9 +47,6 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
   const totalQ = pbqQuestions.length + mcqQuestions.length;
   const totalCorrect = pbqCorrect + mcqCorrect;
   const overallPct = totalQ > 0 ? Math.round((totalCorrect / totalQ) * 100) : 0;
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const elapsedMin = Math.floor(elapsed / 60);
-  const elapsedSec = elapsed % 60;
 
   // Domain breakdown
   const domainMap: Record<string, { correct: number; total: number }> = {};
@@ -96,10 +92,9 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
       </div>
 
       {/* Score cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <ScoreCard icon={<Target className="h-5 w-5 text-primary" />} label="PBQ Score" value={`${pbqCorrect}/${pbqQuestions.length}`} />
         <ScoreCard icon={<BarChart3 className="h-5 w-5 text-accent" />} label="MCQ Score" value={`${mcqCorrect}/${mcqQuestions.length}`} />
-        <ScoreCard icon={<Clock className="h-5 w-5 text-warning" />} label="Time Elapsed" value={`${String(elapsedMin).padStart(2, '0')}:${String(elapsedSec).padStart(2, '0')}`} />
       </div>
 
       {/* Domain breakdown */}

@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ExamHeader } from '@/components/ExamHeader';
 import { PBQSection } from '@/components/PBQSection';
-import { MCQSection, MCQItem } from '@/components/MCQSection';
+import { MCQSection } from '@/components/MCQSection';
 import { ResultsScreen } from '@/components/ResultsScreen';
-import { useTimer } from '@/hooks/useTimer';
-import { pbqQuestions } from '@/data/pbq';
-import mcqData from '@/data/mcq.json';
+import { pbqSets, PBQQuestion } from '@/data/pbq';
+import { mcqSets, MCQItem } from '@/data/mcq';
 import {
   ExamState,
   ExamMode,
@@ -15,14 +14,8 @@ import {
   loadMode,
   saveMode,
 } from '@/lib/examState';
-import { useToast } from '@/hooks/use-toast';
-
-const mcqQuestions: MCQItem[] = mcqData as MCQItem[];
-
-const EXAM_DURATION_MINUTES = 30;
 
 const Index = () => {
-  const { toast } = useToast();
   const [state, setState] = useState<ExamState>(() => {
     const s = loadState();
     s.mode = loadMode();
@@ -34,31 +27,43 @@ const Index = () => {
     saveState(state);
   }, [state]);
 
-  const handleExpire = useCallback(() => {
-    setState((prev) => ({ ...prev, submitted: true }));
-    toast({ title: 'Time\'s up!', description: 'Your exam has been automatically submitted.' });
-  }, [toast]);
-
-  const { display, isWarning, isCritical } = useTimer({
-    durationMinutes: EXAM_DURATION_MINUTES,
-    startTime: state.startTime,
-    onExpire: handleExpire,
-    paused: state.submitted,
-  });
+  // Get current set questions
+  const currentPBQ: PBQQuestion[] = pbqSets.find(s => s.id === state.currentSet)?.questions || pbqSets[0].questions;
+  const currentMCQ: MCQItem[] = mcqSets.find(s => s.id === state.currentSet)?.questions || mcqSets[0].questions;
 
   const setMode = (mode: ExamMode) => {
     saveMode(mode);
     setState((prev) => ({ ...prev, mode }));
   };
 
-  const handleSubmit = () => {
-    setState((prev) => ({ ...prev, submitted: true }));
+  const setCurrentSet = (set: string) => {
+    // Reset answers when switching sets
+    setState((prev) => ({
+      ...prev,
+      currentSet: set,
+      pbqAnswers: {},
+      mcqAnswers: {},
+      flagsPBQ: [],
+      flagsMCQ: [],
+      pbqSubmitted: false,
+      mcqSubmitted: false,
+      startTime: Date.now(),
+    }));
   };
+
+  const handlePBQSubmit = useCallback(() => {
+    setState((prev) => ({ ...prev, pbqSubmitted: true }));
+  }, []);
+
+  const handleMCQSubmit = useCallback(() => {
+    setState((prev) => ({ ...prev, mcqSubmitted: true }));
+  }, []);
 
   const handleReset = () => {
     clearState();
     const fresh = loadState();
     fresh.mode = loadMode();
+    fresh.currentSet = state.currentSet;
     setState(fresh);
   };
 
@@ -92,28 +97,26 @@ const Index = () => {
 
   const showPBQ = state.mode === 'pbq' || state.mode === 'both';
   const showMCQ = state.mode === 'mcq' || state.mode === 'both';
+  const allSubmitted = (showPBQ ? state.pbqSubmitted : true) && (showMCQ ? state.mcqSubmitted : true);
 
   return (
     <div className="min-h-screen flex flex-col">
       <ExamHeader
-        timerDisplay={display}
-        isWarning={isWarning}
-        isCritical={isCritical}
         mode={state.mode}
         onModeChange={setMode}
-        onSubmit={handleSubmit}
         onReset={handleReset}
-        submitted={state.submitted}
+        submitted={allSubmitted}
+        currentSet={state.currentSet}
+        onSetChange={setCurrentSet}
       />
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        {state.submitted ? (
+        {allSubmitted ? (
           <ResultsScreen
-            pbqQuestions={pbqQuestions}
-            mcqQuestions={mcqQuestions}
+            pbqQuestions={showPBQ ? currentPBQ : []}
+            mcqQuestions={showMCQ ? currentMCQ : []}
             pbqAnswers={state.pbqAnswers}
             mcqAnswers={state.mcqAnswers}
-            startTime={state.startTime}
           />
         ) : (
           <div className={`grid gap-6 ${state.mode === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-3xl mx-auto'}`}>
@@ -121,15 +124,16 @@ const Index = () => {
               <section aria-label="Performance-Based Questions">
                 <h2 className="text-sm font-mono text-accent uppercase tracking-wider mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-accent" />
-                  Performance-Based Questions
+                  Performance-Based Questions — Set {state.currentSet}
                 </h2>
                 <PBQSection
-                  questions={pbqQuestions}
+                  questions={currentPBQ}
                   answers={state.pbqAnswers}
                   flags={state.flagsPBQ}
                   onAnswer={onPBQAnswer}
                   onToggleFlag={onPBQFlag}
-                  submitted={state.submitted}
+                  submitted={state.pbqSubmitted}
+                  onSubmit={handlePBQSubmit}
                 />
               </section>
             )}
@@ -137,15 +141,16 @@ const Index = () => {
               <section aria-label="Multiple-Choice Questions">
                 <h2 className="text-sm font-mono text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  Multiple-Choice Questions
+                  Multiple-Choice Questions — Set {state.currentSet}
                 </h2>
                 <MCQSection
-                  questions={mcqQuestions}
+                  questions={currentMCQ}
                   answers={state.mcqAnswers}
                   flags={state.flagsMCQ}
                   onAnswer={onMCQAnswer}
                   onToggleFlag={onMCQFlag}
-                  submitted={state.submitted}
+                  submitted={state.mcqSubmitted}
+                  onSubmit={handleMCQSubmit}
                 />
               </section>
             )}
@@ -156,7 +161,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-3 text-center">
         <p className="text-xs text-muted-foreground font-mono">
-          Security+ SY0-701 PBQ/MCQ Trainer • Replace <code className="text-primary">src/data/mcq.json</code> & <code className="text-primary">src/data/pbq.ts</code> with your own questions
+          Security+ SY0-701 PBQ/MCQ Trainer • 3 question sets (A, B, C) • Switch sets to practice variation
         </p>
       </footer>
     </div>
