@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PBQQuestion } from '@/data/pbq';
-import { Flag, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { Flag, CheckCircle2, XCircle, Info, GripVertical } from 'lucide-react';
 
 interface PBQSectionProps {
   questions: PBQQuestion[];
@@ -74,36 +74,19 @@ export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
           <p className="text-sm text-muted-foreground mb-6">{question.description}</p>
 
           {question.type === 'firewall' && (
-            <FirewallPBQ
-              question={question}
-              answer={answers[question.id] || []}
-              onAnswer={(a) => onAnswer(question.id, a)}
-              submitted={submitted}
-            />
+            <FirewallPBQ question={question} answer={answers[question.id] || []} onAnswer={(a) => onAnswer(question.id, a)} submitted={submitted} />
           )}
           {question.type === 'matching' && (
-            <MatchingPBQ
-              question={question}
-              answer={answers[question.id] || {}}
-              onAnswer={(a) => onAnswer(question.id, a)}
-              submitted={submitted}
-            />
+            <MatchingPBQ question={question} answer={answers[question.id] || {}} onAnswer={(a) => onAnswer(question.id, a)} submitted={submitted} />
           )}
           {question.type === 'classification' && (
-            <ClassificationPBQ
-              question={question}
-              answer={answers[question.id] || {}}
-              onAnswer={(a) => onAnswer(question.id, a)}
-              submitted={submitted}
-            />
+            <ClassificationPBQ question={question} answer={answers[question.id] || {}} onAnswer={(a) => onAnswer(question.id, a)} submitted={submitted} />
           )}
           {question.type === 'placement' && (
-            <PlacementPBQ
-              question={question}
-              answer={answers[question.id] || {}}
-              onAnswer={(a) => onAnswer(question.id, a)}
-              submitted={submitted}
-            />
+            <PlacementPBQ question={question} answer={answers[question.id] || {}} onAnswer={(a) => onAnswer(question.id, a)} submitted={submitted} />
+          )}
+          {question.type === 'ordering' && (
+            <OrderingPBQ question={question} answer={answers[question.id] || []} onAnswer={(a) => onAnswer(question.id, a)} submitted={submitted} />
           )}
 
           {/* Explanation after submission */}
@@ -141,13 +124,14 @@ export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
       {!submitted && (
         <div className="flex flex-col items-center gap-2 mt-2">
           <p className="text-xs text-muted-foreground font-mono">
-            {answeredCount}/{questions.length} answered
+            {answeredCount}/{questions.length} answered • Only answered questions will be checked
           </p>
           <button
             onClick={onSubmit}
-            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg"
+            disabled={answeredCount === 0}
+            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg disabled:opacity-40"
           >
-            Check Answers
+            Check Answers ({answeredCount})
           </button>
         </div>
       )}
@@ -156,20 +140,8 @@ export function PBQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
 }
 
 /* ---- Firewall sub-component ---- */
-function FirewallPBQ({
-  question,
-  answer,
-  onAnswer,
-  submitted,
-}: {
-  question: PBQQuestion;
-  answer: string[];
-  onAnswer: (a: string[]) => void;
-  submitted: boolean;
-}) {
+function FirewallPBQ({ question, answer, onAnswer, submitted }: { question: PBQQuestion; answer: string[]; onAnswer: (a: string[]) => void; submitted: boolean }) {
   if (!question.firewallRules) return null;
-
-  const scenarioText = question.firewallScenario;
   const rules = question.firewallRules;
   const currentAnswers: string[] = answer.length ? answer : rules.map(() => '');
 
@@ -179,11 +151,14 @@ function FirewallPBQ({
     onAnswer(next);
   };
 
+  // Only check rules that have been answered
+  const hasAnswer = currentAnswers.some(a => a !== '');
+
   return (
     <div>
-      {scenarioText && (
+      {question.firewallScenario && (
         <div className="bg-muted/50 border border-border rounded-md p-4 mb-4 text-sm text-muted-foreground font-mono">
-          {scenarioText}
+          {question.firewallScenario}
         </div>
       )}
       <div className="overflow-x-auto">
@@ -200,8 +175,9 @@ function FirewallPBQ({
           </thead>
           <tbody>
             {rules.map((rule, idx) => {
-              const isCorrect = submitted && question.correctActions && currentAnswers[idx] === question.correctActions[idx];
-              const isWrong = submitted && question.correctActions && currentAnswers[idx] !== question.correctActions[idx] && currentAnswers[idx] !== '';
+              const ruleAnswered = currentAnswers[idx] !== '';
+              const isCorrect = submitted && ruleAnswered && question.correctActions && currentAnswers[idx] === question.correctActions[idx];
+              const isWrong = submitted && ruleAnswered && question.correctActions && currentAnswers[idx] !== question.correctActions[idx];
               return (
                 <tr
                   key={rule.ruleId}
@@ -232,7 +208,7 @@ function FirewallPBQ({
                           {action}
                         </button>
                       ))}
-                      {submitted && question.correctActions && (
+                      {submitted && ruleAnswered && question.correctActions && (
                         isCorrect ? (
                           <CheckCircle2 className="h-4 w-4 text-success ml-1" />
                         ) : isWrong ? (
@@ -255,17 +231,7 @@ function FirewallPBQ({
 }
 
 /* ---- Matching sub-component (drag-and-drop) ---- */
-function MatchingPBQ({
-  question,
-  answer,
-  onAnswer,
-  submitted,
-}: {
-  question: PBQQuestion;
-  answer: Record<string, string>;
-  onAnswer: (a: Record<string, string>) => void;
-  submitted: boolean;
-}) {
+function MatchingPBQ({ question, answer, onAnswer, submitted }: { question: PBQQuestion; answer: Record<string, string>; onAnswer: (a: Record<string, string>) => void; submitted: boolean }) {
   const items = question.matchingItems || [];
   const targets = question.matchingTargets || [];
   const [dragItem, setDragItem] = useState<string | null>(null);
@@ -290,9 +256,7 @@ function MatchingPBQ({
               draggable={!submitted}
               onDragStart={() => setDragItem(item.source)}
               onDragEnd={() => setDragItem(null)}
-              className={`draggable-item px-4 py-2 rounded-md border border-border bg-muted text-sm font-medium text-foreground ${
-                dragItem === item.source ? 'dragging' : ''
-              }`}
+              className={`draggable-item px-4 py-2 rounded-md border border-border bg-muted text-sm font-medium text-foreground ${dragItem === item.source ? 'dragging' : ''}`}
             >
               {item.source}
             </div>
@@ -322,32 +286,11 @@ function MatchingPBQ({
                     const correct = submitted && it.target === target;
                     const wrong = submitted && it.target !== target;
                     return (
-                      <span
-                        key={it.source}
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          correct
-                            ? 'bg-success/20 text-success animate-pulse-success'
-                            : wrong
-                            ? 'bg-destructive/20 text-destructive animate-shake'
-                            : 'bg-card text-foreground border border-border'
-                        }`}
-                      >
+                      <span key={it.source} className={`px-2 py-1 rounded text-xs font-medium ${correct ? 'bg-success/20 text-success animate-pulse-success' : wrong ? 'bg-destructive/20 text-destructive animate-shake' : 'bg-card text-foreground border border-border'}`}>
                         {it.source}
-                        {submitted && wrong && (
-                          <span className="ml-1 text-success font-mono text-[10px]">→ {it.target}</span>
-                        )}
+                        {submitted && wrong && <span className="ml-1 text-success font-mono text-[10px]">→ {it.target}</span>}
                         {!submitted && (
-                          <button
-                            onClick={() => {
-                              const next = { ...answer };
-                              delete next[it.source];
-                              onAnswer(next);
-                            }}
-                            className="ml-1 text-muted-foreground hover:text-foreground"
-                            aria-label={`Remove ${it.source}`}
-                          >
-                            ×
-                          </button>
+                          <button onClick={() => { const next = { ...answer }; delete next[it.source]; onAnswer(next); }} className="ml-1 text-muted-foreground hover:text-foreground" aria-label={`Remove ${it.source}`}>×</button>
                         )}
                       </span>
                     );
@@ -363,17 +306,7 @@ function MatchingPBQ({
 }
 
 /* ---- Classification sub-component ---- */
-function ClassificationPBQ({
-  question,
-  answer,
-  onAnswer,
-  submitted,
-}: {
-  question: PBQQuestion;
-  answer: Record<string, string>;
-  onAnswer: (a: Record<string, string>) => void;
-  submitted: boolean;
-}) {
+function ClassificationPBQ({ question, answer, onAnswer, submitted }: { question: PBQQuestion; answer: Record<string, string>; onAnswer: (a: Record<string, string>) => void; submitted: boolean }) {
   const items = question.classificationItems || [];
   const categories = question.classificationCategories || [];
   const [dragItem, setDragItem] = useState<string | null>(null);
@@ -393,15 +326,8 @@ function ClassificationPBQ({
         <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Items to classify</h4>
         <div className="flex flex-wrap gap-2">
           {unassigned.map((it) => (
-            <div
-              key={it.item}
-              draggable={!submitted}
-              onDragStart={() => setDragItem(it.item)}
-              onDragEnd={() => setDragItem(null)}
-              className={`draggable-item px-3 py-1.5 rounded-md border border-border bg-muted text-xs font-medium text-foreground ${
-                dragItem === it.item ? 'dragging' : ''
-              }`}
-            >
+            <div key={it.item} draggable={!submitted} onDragStart={() => setDragItem(it.item)} onDragEnd={() => setDragItem(null)}
+              className={`draggable-item px-3 py-1.5 rounded-md border border-border bg-muted text-xs font-medium text-foreground ${dragItem === it.item ? 'dragging' : ''}`}>
               {it.item}
             </div>
           ))}
@@ -412,29 +338,20 @@ function ClassificationPBQ({
         {categories.map((cat) => {
           const assignedHere = items.filter((it) => answer[it.item] === cat);
           return (
-            <div
-              key={cat}
+            <div key={cat}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
               onDragLeave={(e) => e.currentTarget.classList.remove('drag-over')}
               onDrop={(e) => { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); handleDrop(cat); }}
-              className="drop-zone border-2 border-dashed border-border rounded-lg p-3 min-h-[80px]"
-            >
+              className="drop-zone border-2 border-dashed border-border rounded-lg p-3 min-h-[80px]">
               <p className="text-xs font-mono text-primary mb-2 font-bold">{cat}</p>
               <div className="flex flex-col gap-1">
                 {assignedHere.map((it) => {
                   const correct = submitted && it.category === cat;
                   const wrong = submitted && it.category !== cat;
                   return (
-                    <span
-                      key={it.item}
-                      className={`px-2 py-1 rounded text-xs ${
-                        correct ? 'bg-success/20 text-success' : wrong ? 'bg-destructive/20 text-destructive' : 'bg-card text-foreground border border-border'
-                      }`}
-                    >
+                    <span key={it.item} className={`px-2 py-1 rounded text-xs ${correct ? 'bg-success/20 text-success' : wrong ? 'bg-destructive/20 text-destructive' : 'bg-card text-foreground border border-border'}`}>
                       {it.item}
-                      {submitted && wrong && (
-                        <span className="ml-1 text-success font-mono text-[10px]">→ {it.category}</span>
-                      )}
+                      {submitted && wrong && <span className="ml-1 text-success font-mono text-[10px]">→ {it.category}</span>}
                       {!submitted && (
                         <button onClick={() => { const n = { ...answer }; delete n[it.item]; onAnswer(n); }} className="ml-1 text-muted-foreground hover:text-foreground" aria-label={`Remove ${it.item}`}>×</button>
                       )}
@@ -451,17 +368,7 @@ function ClassificationPBQ({
 }
 
 /* ---- Placement sub-component ---- */
-function PlacementPBQ({
-  question,
-  answer,
-  onAnswer,
-  submitted,
-}: {
-  question: PBQQuestion;
-  answer: Record<string, string>;
-  onAnswer: (a: Record<string, string>) => void;
-  submitted: boolean;
-}) {
+function PlacementPBQ({ question, answer, onAnswer, submitted }: { question: PBQQuestion; answer: Record<string, string>; onAnswer: (a: Record<string, string>) => void; submitted: boolean }) {
   const items = question.placementItems || [];
   const zones = question.placementZones || [];
   const [dragItem, setDragItem] = useState<string | null>(null);
@@ -481,15 +388,8 @@ function PlacementPBQ({
         <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Security controls</h4>
         <div className="flex flex-wrap gap-2">
           {unassigned.map((it) => (
-            <div
-              key={it.item}
-              draggable={!submitted}
-              onDragStart={() => setDragItem(it.item)}
-              onDragEnd={() => setDragItem(null)}
-              className={`draggable-item px-3 py-1.5 rounded-md border border-border bg-muted text-xs font-medium text-foreground ${
-                dragItem === it.item ? 'dragging' : ''
-              }`}
-            >
+            <div key={it.item} draggable={!submitted} onDragStart={() => setDragItem(it.item)} onDragEnd={() => setDragItem(null)}
+              className={`draggable-item px-3 py-1.5 rounded-md border border-border bg-muted text-xs font-medium text-foreground ${dragItem === it.item ? 'dragging' : ''}`}>
               {it.item}
             </div>
           ))}
@@ -500,29 +400,20 @@ function PlacementPBQ({
         {zones.map((zone) => {
           const assignedHere = items.filter((it) => answer[it.item] === zone);
           return (
-            <div
-              key={zone}
+            <div key={zone}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
               onDragLeave={(e) => e.currentTarget.classList.remove('drag-over')}
               onDrop={(e) => { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); handleDrop(zone); }}
-              className="drop-zone border-2 border-dashed border-border rounded-lg p-3 min-h-[100px]"
-            >
+              className="drop-zone border-2 border-dashed border-border rounded-lg p-3 min-h-[100px]">
               <p className="text-xs font-mono text-accent mb-2 font-bold">{zone}</p>
               <div className="flex flex-col gap-1">
                 {assignedHere.map((it) => {
                   const correct = submitted && it.correctZone === zone;
                   const wrong = submitted && it.correctZone !== zone;
                   return (
-                    <span
-                      key={it.item}
-                      className={`px-2 py-1 rounded text-xs ${
-                        correct ? 'bg-success/20 text-success' : wrong ? 'bg-destructive/20 text-destructive' : 'bg-card text-foreground border border-border'
-                      }`}
-                    >
+                    <span key={it.item} className={`px-2 py-1 rounded text-xs ${correct ? 'bg-success/20 text-success' : wrong ? 'bg-destructive/20 text-destructive' : 'bg-card text-foreground border border-border'}`}>
                       {it.item}
-                      {submitted && wrong && (
-                        <span className="ml-1 text-success font-mono text-[10px]">→ {it.correctZone}</span>
-                      )}
+                      {submitted && wrong && <span className="ml-1 text-success font-mono text-[10px]">→ {it.correctZone}</span>}
                       {!submitted && (
                         <button onClick={() => { const n = { ...answer }; delete n[it.item]; onAnswer(n); }} className="ml-1 text-muted-foreground hover:text-foreground" aria-label={`Remove ${it.item}`}>×</button>
                       )}
@@ -534,6 +425,73 @@ function PlacementPBQ({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ---- Ordering sub-component (new!) ---- */
+function OrderingPBQ({ question, answer, onAnswer, submitted }: { question: PBQQuestion; answer: string[]; onAnswer: (a: string[]) => void; submitted: boolean }) {
+  const items = question.orderItems || [];
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  // Initialize with shuffled order if no answer yet
+  const currentOrder: string[] = answer.length > 0 ? answer : items.map(it => it.step).sort(() => Math.random() - 0.5);
+
+  if (answer.length === 0 && items.length > 0) {
+    // Auto-initialize with shuffled order
+    setTimeout(() => onAnswer(currentOrder), 0);
+  }
+
+  const handleDrop = (targetIdx: number) => {
+    if (dragIdx === null || submitted) return;
+    const next = [...currentOrder];
+    const [moved] = next.splice(dragIdx, 1);
+    next.splice(targetIdx, 0, moved);
+    onAnswer(next);
+    setDragIdx(null);
+  };
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Drag to reorder</h4>
+      {currentOrder.map((step, idx) => {
+        const correctItem = items.find(it => it.step === step);
+        const isCorrectPosition = submitted && correctItem && correctItem.correctPosition === idx;
+        const isWrongPosition = submitted && correctItem && correctItem.correctPosition !== idx;
+
+        return (
+          <div
+            key={step}
+            draggable={!submitted}
+            onDragStart={() => setDragIdx(idx)}
+            onDragEnd={() => setDragIdx(null)}
+            onDragOver={(e) => { e.preventDefault(); }}
+            onDrop={(e) => { e.preventDefault(); handleDrop(idx); }}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm transition-all ${
+              isCorrectPosition
+                ? 'bg-success/10 border-success text-success animate-pulse-success'
+                : isWrongPosition
+                ? 'bg-destructive/10 border-destructive text-destructive animate-shake'
+                : dragIdx === idx
+                ? 'border-accent bg-accent/10 text-foreground opacity-50'
+                : 'border-border bg-muted text-foreground'
+            } ${!submitted ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">
+              {idx + 1}
+            </span>
+            <span className="flex-1">{step}</span>
+            {isCorrectPosition && <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />}
+            {isWrongPosition && correctItem && (
+              <span className="flex items-center gap-1">
+                <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+                <span className="text-xs text-success font-mono">#{correctItem.correctPosition + 1}</span>
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

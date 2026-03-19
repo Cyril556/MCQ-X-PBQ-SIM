@@ -10,43 +10,55 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswers }: ResultsScreenProps) {
-  // Score PBQ
+  // Score PBQ (only answered questions)
   let pbqCorrect = 0;
+  let pbqAnswered = 0;
   pbqQuestions.forEach((q) => {
     const ans = pbqAnswers[q.id];
     if (!ans) return;
+    let hasAnswer = false;
+    let isCorrect = false;
     if (q.type === 'firewall' && q.correctActions) {
-      const correct = (ans as string[]).every((a: string, i: number) => a === q.correctActions![i]);
-      if (correct) pbqCorrect++;
+      hasAnswer = (ans as string[]).some((a: string) => a !== '');
+      isCorrect = (ans as string[]).every((a: string, i: number) => a === q.correctActions![i]);
     } else if (q.type === 'matching' && q.matchingItems) {
-      const allCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
-      if (allCorrect) pbqCorrect++;
+      hasAnswer = Object.keys(ans).length > 0;
+      isCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
     } else if (q.type === 'classification' && q.classificationItems) {
-      const allCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
-      if (allCorrect) pbqCorrect++;
+      hasAnswer = Object.keys(ans).length > 0;
+      isCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
     } else if (q.type === 'placement' && q.placementItems) {
-      const allCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
-      if (allCorrect) pbqCorrect++;
+      hasAnswer = Object.keys(ans).length > 0;
+      isCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
+    } else if (q.type === 'ordering' && q.orderItems) {
+      hasAnswer = (ans as string[]).length > 0;
+      isCorrect = q.orderItems.every((it) => (ans as string[])[it.correctPosition] === it.step);
+    }
+    if (hasAnswer) {
+      pbqAnswered++;
+      if (isCorrect) pbqCorrect++;
     }
   });
 
-  // Score MCQ
+  // Score MCQ (only answered questions)
   let mcqCorrect = 0;
+  let mcqAnswered = 0;
   mcqQuestions.forEach((q) => {
     const ans = mcqAnswers[q.id];
     if (ans === undefined) return;
+    mcqAnswered++;
     if (q.type === 'single') {
       if (ans === q.answer) mcqCorrect++;
     } else {
-      const selected = (ans as number[]).sort();
-      const correct = (q.answer as number[]).sort();
+      const selected = [...(ans as number[])].sort();
+      const correct = [...(q.answer as number[])].sort();
       if (JSON.stringify(selected) === JSON.stringify(correct)) mcqCorrect++;
     }
   });
 
-  const totalQ = pbqQuestions.length + mcqQuestions.length;
+  const totalAnswered = pbqAnswered + mcqAnswered;
   const totalCorrect = pbqCorrect + mcqCorrect;
-  const overallPct = totalQ > 0 ? Math.round((totalCorrect / totalQ) * 100) : 0;
+  const overallPct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
   // Domain breakdown
   const domainMap: Record<string, { correct: number; total: number }> = {};
@@ -60,6 +72,7 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
     else if (q.type === 'matching' && q.matchingItems) isCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
     else if (q.type === 'classification' && q.classificationItems) isCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
     else if (q.type === 'placement' && q.placementItems) isCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
+    else if (q.type === 'ordering' && q.orderItems) isCorrect = q.orderItems.every((it) => (ans as string[])[it.correctPosition] === it.step);
     if (isCorrect) domainMap[q.domain].correct++;
   });
   mcqQuestions.forEach((q) => {
@@ -93,8 +106,8 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
 
       {/* Score cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ScoreCard icon={<Target className="h-5 w-5 text-primary" />} label="PBQ Score" value={`${pbqCorrect}/${pbqQuestions.length}`} />
-        <ScoreCard icon={<BarChart3 className="h-5 w-5 text-accent" />} label="MCQ Score" value={`${mcqCorrect}/${mcqQuestions.length}`} />
+        <ScoreCard icon={<Target className="h-5 w-5 text-primary" />} label="PBQ Score" value={`${pbqCorrect}/${pbqAnswered} answered`} />
+        <ScoreCard icon={<BarChart3 className="h-5 w-5 text-accent" />} label="MCQ Score" value={`${mcqCorrect}/${mcqAnswered} answered`} />
       </div>
 
       {/* Domain breakdown */}
