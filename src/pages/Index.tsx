@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { ExamHeader } from '@/components/ExamHeader';
 import { PBQSection } from '@/components/PBQSection';
 import { MCQSection } from '@/components/MCQSection';
@@ -22,14 +22,25 @@ const Index = () => {
     return s;
   });
 
-  // Persist on every state change
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+
   useEffect(() => {
     saveState(state);
   }, [state]);
 
-  // Get current set questions
-  const currentPBQ: PBQQuestion[] = pbqSets.find(s => s.id === state.currentSet)?.questions || pbqSets[0].questions;
-  const currentMCQ: MCQItem[] = mcqSets.find(s => s.id === state.currentSet)?.questions || mcqSets[0].questions;
+  // Filter questions by selected domains
+  const allPBQ: PBQQuestion[] = pbqSets.find(s => s.id === state.currentSet)?.questions || pbqSets[0].questions;
+  const allMCQ: MCQItem[] = mcqSets.find(s => s.id === state.currentSet)?.questions || mcqSets[0].questions;
+
+  const currentPBQ = useMemo(() => {
+    if (selectedDomains.length === 0) return allPBQ;
+    return allPBQ.filter(q => selectedDomains.includes(q.domain));
+  }, [allPBQ, selectedDomains]);
+
+  const currentMCQ = useMemo(() => {
+    if (selectedDomains.length === 0) return allMCQ;
+    return allMCQ.filter(q => selectedDomains.includes(q.domain));
+  }, [allMCQ, selectedDomains]);
 
   const setMode = (mode: ExamMode) => {
     saveMode(mode);
@@ -37,7 +48,6 @@ const Index = () => {
   };
 
   const setCurrentSet = (set: string) => {
-    // Reset answers when switching sets
     setState((prev) => ({
       ...prev,
       currentSet: set,
@@ -65,9 +75,9 @@ const Index = () => {
     fresh.mode = loadMode();
     fresh.currentSet = state.currentSet;
     setState(fresh);
+    setSelectedDomains([]);
   };
 
-  // PBQ handlers
   const onPBQAnswer = (qId: string, answer: any) => {
     setState((prev) => ({ ...prev, pbqAnswers: { ...prev.pbqAnswers, [qId]: answer } }));
   };
@@ -81,7 +91,6 @@ const Index = () => {
     }));
   };
 
-  // MCQ handlers
   const onMCQAnswer = (qId: string, answer: number | number[]) => {
     setState((prev) => ({ ...prev, mcqAnswers: { ...prev.mcqAnswers, [qId]: answer } }));
   };
@@ -108,6 +117,8 @@ const Index = () => {
         submitted={allSubmitted}
         currentSet={state.currentSet}
         onSetChange={setCurrentSet}
+        selectedDomains={selectedDomains}
+        onDomainsChange={setSelectedDomains}
       />
 
       <main className="flex-1 container mx-auto px-4 py-6">
@@ -120,11 +131,14 @@ const Index = () => {
           />
         ) : (
           <div className={`grid gap-6 ${state.mode === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-3xl mx-auto'}`}>
-            {showPBQ && (
+            {showPBQ && currentPBQ.length > 0 && (
               <section aria-label="Performance-Based Questions">
                 <h2 className="text-sm font-mono text-accent uppercase tracking-wider mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-accent" />
                   Performance-Based Questions — Set {state.currentSet}
+                  {selectedDomains.length > 0 && (
+                    <span className="text-muted-foreground text-[10px] normal-case">({currentPBQ.length} filtered)</span>
+                  )}
                 </h2>
                 <PBQSection
                   questions={currentPBQ}
@@ -137,11 +151,19 @@ const Index = () => {
                 />
               </section>
             )}
-            {showMCQ && (
+            {showPBQ && currentPBQ.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="font-mono text-sm">No PBQ questions match the selected domain filters.</p>
+              </div>
+            )}
+            {showMCQ && currentMCQ.length > 0 && (
               <section aria-label="Multiple-Choice Questions">
                 <h2 className="text-sm font-mono text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary" />
                   Multiple-Choice Questions — Set {state.currentSet}
+                  {selectedDomains.length > 0 && (
+                    <span className="text-muted-foreground text-[10px] normal-case">({currentMCQ.length} filtered)</span>
+                  )}
                 </h2>
                 <MCQSection
                   questions={currentMCQ}
@@ -154,14 +176,18 @@ const Index = () => {
                 />
               </section>
             )}
+            {showMCQ && currentMCQ.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="font-mono text-sm">No MCQ questions match the selected domain filters.</p>
+              </div>
+            )}
           </div>
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border py-3 text-center">
         <p className="text-xs text-muted-foreground font-mono">
-          Security+ SY0-701 PBQ/MCQ Trainer • 3 question sets (A, B, C) • Switch sets to practice variation
+          Security+ SY0-701 PBQ/MCQ Trainer • 3 question sets (A, B, C) • Filter by domain • Check only answered questions
         </p>
       </footer>
     </div>

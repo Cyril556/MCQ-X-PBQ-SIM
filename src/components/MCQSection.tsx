@@ -43,10 +43,9 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
     }
   };
 
-  // Show feedback only after submission
-  const showFeedback = submitted;
+  // Only show feedback for answered questions after submission
+  const showFeedback = submitted && hasAnswered;
 
-  // Check if current question is correct (for submitted state)
   const isCurrentCorrect = () => {
     if (!hasAnswered) return false;
     if (question.type === 'single') return currentAnswer === question.answer;
@@ -55,7 +54,6 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
     return JSON.stringify(sel) === JSON.stringify(cor);
   };
 
-  const isLastQuestion = currentIndex === questions.length - 1;
   const answeredCount = questions.filter(q => answers[q.id] !== undefined).length;
 
   return (
@@ -139,7 +137,7 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
           })}
         </div>
 
-        {/* Explanation after submission */}
+        {/* Explanation - only for answered questions */}
         {showFeedback && (
           <div className={`mt-4 p-4 rounded-md border animate-fade-in ${
             isCurrentCorrect() ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'
@@ -151,6 +149,13 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
               </p>
             </div>
             <p className="text-sm text-muted-foreground">{question.explanation}</p>
+          </div>
+        )}
+
+        {/* Unanswered notice when submitted */}
+        {submitted && !hasAnswered && (
+          <div className="mt-4 p-4 rounded-md border border-border bg-muted/30 animate-fade-in">
+            <p className="text-xs font-mono text-muted-foreground">This question was not answered and was not scored.</p>
           </div>
         )}
 
@@ -177,13 +182,14 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
       {!submitted && (
         <div className="flex flex-col items-center gap-2 mt-2">
           <p className="text-xs text-muted-foreground font-mono">
-            {answeredCount}/{questions.length} answered
+            {answeredCount}/{questions.length} answered • Only answered questions will be checked
           </p>
           <button
             onClick={onSubmit}
-            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg"
+            disabled={answeredCount === 0}
+            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg disabled:opacity-40"
           >
-            Check Answers
+            Check Answers ({answeredCount})
           </button>
         </div>
       )}
