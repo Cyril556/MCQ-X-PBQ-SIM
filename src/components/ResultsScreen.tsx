@@ -10,23 +10,33 @@ interface ResultsScreenProps {
 }
 
 export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswers }: ResultsScreenProps) {
-  // Score PBQ
+  // Score PBQ (only answered questions)
   let pbqCorrect = 0;
+  let pbqAnswered = 0;
   pbqQuestions.forEach((q) => {
     const ans = pbqAnswers[q.id];
     if (!ans) return;
+    let hasAnswer = false;
+    let isCorrect = false;
     if (q.type === 'firewall' && q.correctActions) {
-      const correct = (ans as string[]).every((a: string, i: number) => a === q.correctActions![i]);
-      if (correct) pbqCorrect++;
+      hasAnswer = (ans as string[]).some((a: string) => a !== '');
+      isCorrect = (ans as string[]).every((a: string, i: number) => a === q.correctActions![i]);
     } else if (q.type === 'matching' && q.matchingItems) {
-      const allCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
-      if (allCorrect) pbqCorrect++;
+      hasAnswer = Object.keys(ans).length > 0;
+      isCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
     } else if (q.type === 'classification' && q.classificationItems) {
-      const allCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
-      if (allCorrect) pbqCorrect++;
+      hasAnswer = Object.keys(ans).length > 0;
+      isCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
     } else if (q.type === 'placement' && q.placementItems) {
-      const allCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
-      if (allCorrect) pbqCorrect++;
+      hasAnswer = Object.keys(ans).length > 0;
+      isCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
+    } else if (q.type === 'ordering' && q.orderItems) {
+      hasAnswer = (ans as string[]).length > 0;
+      isCorrect = q.orderItems.every((it) => (ans as string[])[it.correctPosition] === it.step);
+    }
+    if (hasAnswer) {
+      pbqAnswered++;
+      if (isCorrect) pbqCorrect++;
     }
   });
 
