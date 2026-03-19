@@ -40,16 +40,18 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
     }
   });
 
-  // Score MCQ
+  // Score MCQ (only answered questions)
   let mcqCorrect = 0;
+  let mcqAnswered = 0;
   mcqQuestions.forEach((q) => {
     const ans = mcqAnswers[q.id];
     if (ans === undefined) return;
+    mcqAnswered++;
     if (q.type === 'single') {
       if (ans === q.answer) mcqCorrect++;
     } else {
-      const selected = (ans as number[]).sort();
-      const correct = (q.answer as number[]).sort();
+      const selected = [...(ans as number[])].sort();
+      const correct = [...(q.answer as number[])].sort();
       if (JSON.stringify(selected) === JSON.stringify(correct)) mcqCorrect++;
     }
   });
