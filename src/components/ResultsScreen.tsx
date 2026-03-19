@@ -106,8 +106,8 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
 
       {/* Score cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ScoreCard icon={<Target className="h-5 w-5 text-primary" />} label="PBQ Score" value={`${pbqCorrect}/${pbqQuestions.length}`} />
-        <ScoreCard icon={<BarChart3 className="h-5 w-5 text-accent" />} label="MCQ Score" value={`${mcqCorrect}/${mcqQuestions.length}`} />
+        <ScoreCard icon={<Target className="h-5 w-5 text-primary" />} label="PBQ Score" value={`${pbqCorrect}/${pbqAnswered} answered`} />
+        <ScoreCard icon={<BarChart3 className="h-5 w-5 text-accent" />} label="MCQ Score" value={`${mcqCorrect}/${mcqAnswered} answered`} />
       </div>
 
       {/* Domain breakdown */}
