@@ -72,6 +72,7 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
     else if (q.type === 'matching' && q.matchingItems) isCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
     else if (q.type === 'classification' && q.classificationItems) isCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
     else if (q.type === 'placement' && q.placementItems) isCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
+    else if (q.type === 'ordering' && q.orderItems) isCorrect = q.orderItems.every((it) => (ans as string[])[it.correctPosition] === it.step);
     if (isCorrect) domainMap[q.domain].correct++;
   });
   mcqQuestions.forEach((q) => {
