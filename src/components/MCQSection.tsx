@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Flag, CheckCircle2, XCircle, Info } from 'lucide-react';
 import { MCQItem } from '@/data/mcq';
+import { useToast } from '@/hooks/use-toast';
 
 interface MCQSectionProps {
   questions: MCQItem[];
@@ -14,12 +15,15 @@ interface MCQSectionProps {
 
 export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, submitted, onSubmit }: MCQSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [checkedQuestions, setCheckedQuestions] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
   const question = questions[currentIndex];
 
   if (!question) return <p className="text-muted-foreground">No MCQ questions loaded.</p>;
 
   const currentAnswer = answers[question.id];
   const hasAnswered = currentAnswer !== undefined;
+  const isChecked = checkedQuestions.has(question.id);
 
   const isCorrectOption = (optIdx: number) => {
     if (question.type === 'single') return question.answer === optIdx;
@@ -44,7 +48,7 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
   };
 
   // Only show feedback for answered questions after submission
-  const showFeedback = submitted && hasAnswered;
+  const showFeedback = (submitted || isChecked) && hasAnswered;
 
   const isCurrentCorrect = () => {
     if (!hasAnswered) return false;
@@ -178,18 +182,26 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
         </div>
       </div>
 
-      {/* Check Answers button */}
+      {/* Check This Question button */}
       {!submitted && (
         <div className="flex flex-col items-center gap-2 mt-2">
           <p className="text-xs text-muted-foreground font-mono">
-            {answeredCount}/{questions.length} answered • Only answered questions will be checked
+            Answer the question to check your response
           </p>
           <button
-            onClick={onSubmit}
-            disabled={answeredCount === 0}
+            onClick={() => {
+              setCheckedQuestions(prev => new Set(prev).add(question.id));
+              const correct = isCurrentCorrect();
+              toast({
+                title: correct ? "Correct!" : "Incorrect",
+                description: correct ? "Great job!" : "Check the explanation below.",
+                variant: correct ? "default" : "destructive",
+              });
+            }}
+            disabled={!hasAnswered || isChecked}
             className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg disabled:opacity-40"
           >
-            Check Answers ({answeredCount})
+            {isChecked ? 'Checked' : 'Check This Question'}
           </button>
         </div>
       )}
