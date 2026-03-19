@@ -56,9 +56,9 @@ export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswe
     }
   });
 
-  const totalQ = pbqQuestions.length + mcqQuestions.length;
+  const totalAnswered = pbqAnswered + mcqAnswered;
   const totalCorrect = pbqCorrect + mcqCorrect;
-  const overallPct = totalQ > 0 ? Math.round((totalCorrect / totalQ) * 100) : 0;
+  const overallPct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
   // Domain breakdown
   const domainMap: Record<string, { correct: number; total: number }> = {};
