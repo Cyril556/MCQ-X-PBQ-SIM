@@ -14,387 +14,136 @@ export interface MCQSet {
   questions: MCQItem[];
 }
 
-/* ========== SET A ========== */
+/* ========== SET A (20 questions) ========== */
 const setA: MCQItem[] = [
-  {
-    id: "a1", domain: "Identity and Access Management",
-    question: "Which MFA method provides the strongest resistance to phishing?",
-    type: "single",
-    options: ["SMS OTP", "Email OTP", "Hardware FIDO2 security key", "Push notification"],
-    answer: 2,
-    explanation: "FIDO2/WebAuthn hardware security keys use cryptographic challenge-response bound to the origin, making them immune to phishing."
-  },
-  {
-    id: "a2", domain: "Identity and Access Management",
-    question: "Which access control model uses labels such as 'Top Secret' and 'Confidential'?",
-    type: "single",
-    options: ["RBAC", "MAC", "DAC", "ABAC"],
-    answer: 1,
-    explanation: "MAC uses classification labels assigned by administrators. Users cannot change permissions."
-  },
-  {
-    id: "a3", domain: "Firewall & ACL Configuration",
-    question: "Select all ports that should be allowed inbound to a web server in a DMZ.",
-    type: "multiple",
-    options: ["22 (SSH)", "80 (HTTP)", "443 (HTTPS)", "3306 (MySQL)"],
-    answer: [1, 2],
-    explanation: "Only HTTP (80) and HTTPS (443) should be exposed inbound to a DMZ web server."
-  },
-  {
-    id: "a4", domain: "Cryptography",
-    question: "Which algorithm is an asymmetric encryption algorithm?",
-    type: "single",
-    options: ["AES-256", "RSA", "SHA-256", "3DES"],
-    answer: 1,
-    explanation: "RSA is an asymmetric (public-key) algorithm. AES and 3DES are symmetric; SHA-256 is hashing."
-  },
-  {
-    id: "a5", domain: "Cryptography",
-    question: "Which of the following are hashing algorithms? (Select all that apply)",
-    type: "multiple",
-    options: ["MD5", "AES", "SHA-256", "RSA"],
-    answer: [0, 2],
-    explanation: "MD5 and SHA-256 are hashing algorithms. AES is symmetric encryption and RSA is asymmetric encryption."
-  },
-  {
-    id: "a6", domain: "Network Security",
-    question: "What is the primary purpose of a VLAN?",
-    type: "single",
-    options: ["Encrypt network traffic", "Segment broadcast domains", "Provide wireless access", "Monitor network traffic"],
-    answer: 1,
-    explanation: "VLANs logically segment a physical network into separate broadcast domains."
-  },
-  {
-    id: "a7", domain: "Network Security",
-    question: "Which protocol is used to securely access a remote command line?",
-    type: "single",
-    options: ["Telnet", "FTP", "SSH", "SNMP"],
-    answer: 2,
-    explanation: "SSH encrypts the session for remote CLI access. Telnet transmits in cleartext."
-  },
-  {
-    id: "a8", domain: "Threats & Vulnerabilities",
-    question: "What type of attack involves an attacker inserting themselves between two communicating parties?",
-    type: "single",
-    options: ["Phishing", "On-path (Man-in-the-Middle)", "SQL Injection", "Cross-Site Scripting"],
-    answer: 1,
-    explanation: "An on-path (MitM) attack positions the attacker between two parties to intercept communications."
-  },
-  {
-    id: "a9", domain: "Threats & Vulnerabilities",
-    question: "Which of the following are social engineering techniques? (Select all that apply)",
-    type: "multiple",
-    options: ["Pretexting", "Buffer overflow", "Tailgating", "SQL injection"],
-    answer: [0, 2],
-    explanation: "Pretexting and tailgating are social engineering. Buffer overflow and SQL injection are technical attacks."
-  },
-  {
-    id: "a10", domain: "Incident Response",
-    question: "What is the first step in the incident response process?",
-    type: "single",
-    options: ["Containment", "Eradication", "Preparation", "Identification"],
-    answer: 2,
-    explanation: "Preparation is the first phase of incident response (NIST SP 800-61)."
-  },
-  {
-    id: "a11", domain: "Security Operations",
-    question: "Which log source would be MOST useful for detecting unauthorized login attempts?",
-    type: "single",
-    options: ["Firewall logs", "Authentication server logs", "DNS logs", "DHCP logs"],
-    answer: 1,
-    explanation: "Authentication server logs record all login attempts, making them the best source for detecting brute force."
-  },
-  {
-    id: "a12", domain: "Security Architecture",
-    question: "Which security concept ensures a user has only the minimum permissions needed?",
-    type: "single",
-    options: ["Separation of duties", "Least privilege", "Defense in depth", "Zero trust"],
-    answer: 1,
-    explanation: "Least privilege limits access rights to the bare minimum for the user's role."
-  },
-  {
-    id: "a13", domain: "Cloud Security",
-    question: "In an IaaS shared responsibility model, who is responsible for OS patching?",
-    type: "single",
-    options: ["Cloud provider", "Customer", "Both equally", "Neither — it's automated"],
-    answer: 1,
-    explanation: "In IaaS, the customer is responsible for OS patching on their virtual machines."
-  },
-  {
-    id: "a14", domain: "Governance & Compliance",
-    question: "Which regulation specifically protects the privacy of health information in the United States?",
-    type: "single",
-    options: ["GDPR", "PCI-DSS", "HIPAA", "SOX"],
-    answer: 2,
-    explanation: "HIPAA establishes standards for protecting sensitive patient health information."
-  },
-  {
-    id: "a15", domain: "Mobile Device Management",
-    question: "A company needs mobile devices auto-locked after timeout, GPS tracking, and user/company data separation. What implements this?",
-    type: "single",
-    options: ["Network segmentation", "Biometrics", "COPE deployment", "MDM solution"],
-    answer: 3,
-    explanation: "MDM provides centralized control including auto-lock policies, location tracking, and data containerization."
-  },
+  { id: "a1", domain: "Identity and Access Management", question: "Which MFA method provides the strongest resistance to phishing?", type: "single", options: ["SMS OTP", "Email OTP", "Hardware FIDO2 security key", "Push notification"], answer: 2, explanation: "FIDO2/WebAuthn hardware keys use cryptographic challenge-response bound to the origin, making them immune to phishing." },
+  { id: "a2", domain: "Identity and Access Management", question: "Which access control model uses labels such as 'Top Secret' and 'Confidential'?", type: "single", options: ["RBAC", "MAC", "DAC", "ABAC"], answer: 1, explanation: "MAC uses classification labels assigned by administrators. Users cannot change permissions." },
+  { id: "a3", domain: "Firewall & ACL Configuration", question: "Select all ports that should be allowed inbound to a web server in a DMZ.", type: "multiple", options: ["22 (SSH)", "80 (HTTP)", "443 (HTTPS)", "3306 (MySQL)"], answer: [1, 2], explanation: "Only HTTP (80) and HTTPS (443) should be exposed inbound to a DMZ web server." },
+  { id: "a4", domain: "Cryptography", question: "Which algorithm is an asymmetric encryption algorithm?", type: "single", options: ["AES-256", "RSA", "SHA-256", "3DES"], answer: 1, explanation: "RSA is an asymmetric (public-key) algorithm. AES and 3DES are symmetric; SHA-256 is hashing." },
+  { id: "a5", domain: "Cryptography", question: "Which of the following are hashing algorithms? (Select all that apply)", type: "multiple", options: ["MD5", "AES", "SHA-256", "RSA"], answer: [0, 2], explanation: "MD5 and SHA-256 are hashing algorithms. AES is symmetric encryption and RSA is asymmetric encryption." },
+  { id: "a6", domain: "Network Security", question: "What is the primary purpose of a VLAN?", type: "single", options: ["Encrypt network traffic", "Segment broadcast domains", "Provide wireless access", "Monitor network traffic"], answer: 1, explanation: "VLANs logically segment a physical network into separate broadcast domains." },
+  { id: "a7", domain: "Network Security", question: "Which protocol is used to securely access a remote command line?", type: "single", options: ["Telnet", "FTP", "SSH", "SNMP"], answer: 2, explanation: "SSH encrypts the session for remote CLI access. Telnet transmits in cleartext." },
+  { id: "a8", domain: "Threats & Vulnerabilities", question: "What type of attack involves an attacker inserting themselves between two communicating parties?", type: "single", options: ["Phishing", "On-path (Man-in-the-Middle)", "SQL Injection", "Cross-Site Scripting"], answer: 1, explanation: "An on-path (MitM) attack positions the attacker between two parties to intercept communications." },
+  { id: "a9", domain: "Threats & Vulnerabilities", question: "Which of the following are social engineering techniques? (Select all that apply)", type: "multiple", options: ["Pretexting", "Buffer overflow", "Tailgating", "SQL injection"], answer: [0, 2], explanation: "Pretexting and tailgating are social engineering. Buffer overflow and SQL injection are technical attacks." },
+  { id: "a10", domain: "Incident Response", question: "What is the first step in the incident response process?", type: "single", options: ["Containment", "Eradication", "Preparation", "Identification"], answer: 2, explanation: "Preparation is the first phase of incident response (NIST SP 800-61)." },
+  { id: "a11", domain: "Security Operations", question: "Which log source would be MOST useful for detecting unauthorized login attempts?", type: "single", options: ["Firewall logs", "Authentication server logs", "DNS logs", "DHCP logs"], answer: 1, explanation: "Authentication server logs record all login attempts, making them the best source for detecting brute force." },
+  { id: "a12", domain: "Security Architecture", question: "Which security concept ensures a user has only the minimum permissions needed?", type: "single", options: ["Separation of duties", "Least privilege", "Defense in depth", "Zero trust"], answer: 1, explanation: "Least privilege limits access rights to the bare minimum for the user's role." },
+  { id: "a13", domain: "Cloud Security", question: "In an IaaS shared responsibility model, who is responsible for OS patching?", type: "single", options: ["Cloud provider", "Customer", "Both equally", "Neither — it's automated"], answer: 1, explanation: "In IaaS, the customer is responsible for OS patching on their virtual machines." },
+  { id: "a14", domain: "Governance & Compliance", question: "Which regulation specifically protects the privacy of health information in the United States?", type: "single", options: ["GDPR", "PCI-DSS", "HIPAA", "SOX"], answer: 2, explanation: "HIPAA establishes standards for protecting sensitive patient health information." },
+  { id: "a15", domain: "Mobile Device Management", question: "A company needs auto-lock, GPS tracking, and data separation on mobile devices. What implements this?", type: "single", options: ["Network segmentation", "Biometrics", "COPE deployment", "MDM solution"], answer: 3, explanation: "MDM provides centralized control including auto-lock, location tracking, and data containerization." },
+  { id: "a16", domain: "Security Architecture", question: "What is a honeypot primarily used for?", type: "single", options: ["Load balancing traffic", "Attracting and studying attackers", "Encrypting sensitive data", "Backing up critical systems"], answer: 1, explanation: "A honeypot is a decoy system designed to attract attackers so their methods can be studied." },
+  { id: "a17", domain: "Application Security", question: "Which is the MOST effective defense against injection attacks?", type: "single", options: ["Input validation and parameterized queries", "SSL/TLS encryption", "Rate limiting", "Session timeouts"], answer: 0, explanation: "Input validation and parameterized queries prevent malicious input from being executed as code." },
+  { id: "a18", domain: "General Security Concepts", question: "Which element of the CIA triad ensures data has not been tampered with?", type: "single", options: ["Confidentiality", "Integrity", "Availability", "Non-repudiation"], answer: 1, explanation: "Integrity ensures that data has not been altered or tampered with during storage or transmission." },
+  { id: "a19", domain: "Governance & Compliance", question: "Which data classification level typically contains trade secrets and financial forecasts?", type: "single", options: ["Public", "Internal", "Confidential", "Restricted/Top Secret"], answer: 3, explanation: "Restricted/Top Secret is reserved for the most sensitive data whose disclosure would cause severe damage." },
+  { id: "a20", domain: "Network Security", question: "What does DNSSEC provide?", type: "single", options: ["Encrypted DNS queries", "Authentication of DNS responses", "DNS load balancing", "DNS over HTTPS"], answer: 1, explanation: "DNSSEC adds digital signatures to DNS data to authenticate responses and prevent DNS spoofing." },
 ];
 
-/* ========== SET B ========== */
+/* ========== SET B (20 questions) ========== */
 const setB: MCQItem[] = [
-  {
-    id: "b1", domain: "Security Operations",
-    question: "A company hired a third-party to gather information without direct internal network access. Which describes this?",
-    type: "single",
-    options: ["Vulnerability scanning", "Passive reconnaissance", "Supply chain analysis", "Regulatory audit"],
-    answer: 1,
-    explanation: "Passive reconnaissance gathers information from publicly available sources without interacting with target systems."
-  },
-  {
-    id: "b2", domain: "Network Security",
-    question: "A company's email server received email from a server not on the authorized list. Which determines disposition?",
-    type: "single",
-    options: ["SPF", "NAC", "DMARC", "DKIM"],
-    answer: 2,
-    explanation: "DMARC determines the disposition of messages that fail SPF and/or DKIM checks."
-  },
-  {
-    id: "b3", domain: "Threats & Vulnerabilities",
-    question: "Which threat actor would be MOST likely to attack for direct financial gain?",
-    type: "single",
-    options: ["Organized crime", "Hacktivist", "Nation state", "Shadow IT"],
-    answer: 0,
-    explanation: "Organized crime groups are primarily motivated by financial gain."
-  },
-  {
-    id: "b4", domain: "Security Architecture",
-    question: "A city is building an ambulance dispatch network. Which should have the highest priority?",
-    type: "single",
-    options: ["Integration costs", "Patch availability", "System availability", "Power usage"],
-    answer: 2,
-    explanation: "For emergency services, system availability is the highest priority."
-  },
-  {
-    id: "b5", domain: "Security Operations",
-    question: "An administrator needs to know how often firewall hardware is expected to fail. Which metric?",
-    type: "single",
-    options: ["MTBF", "RTO", "MTTR", "RPO"],
-    answer: 0,
-    explanation: "MTBF (Mean Time Between Failures) measures expected time between hardware failures."
-  },
-  {
-    id: "b6", domain: "Threats & Vulnerabilities",
-    question: "An attacker calls a help desk pretending to be a director, requesting a password reset. What type of attack?",
-    type: "single",
-    options: ["Social engineering", "Supply chain", "Watering hole", "On-path"],
-    answer: 0,
-    explanation: "Social engineering manipulates people into performing actions or divulging information."
-  },
-  {
-    id: "b7", domain: "Governance & Compliance",
-    question: "Two companies want to qualify their partnership with a broad formal agreement. Which describes this?",
-    type: "single",
-    options: ["SLA", "SOW", "MOA", "NDA"],
-    answer: 2,
-    explanation: "A Memorandum of Agreement (MOA) is a broad formal agreement between organizations."
-  },
-  {
-    id: "b8", domain: "Identity and Access Management",
-    question: "A password policy lacks attempt restrictions and doesn't require periodic changes. Which TWO fix this?",
-    type: "multiple",
-    options: ["Password complexity", "Password expiration", "Password reuse", "Account lockout", "Password managers"],
-    answer: [1, 3],
-    explanation: "Password expiration requires periodic changes; account lockout limits failed login attempts."
-  },
-  {
-    id: "b9", domain: "Security Architecture",
-    question: "A company wants to examine credentials of each person entering the data center. What facilitates this?",
-    type: "single",
-    options: ["Access control vestibule", "Video surveillance", "Pressure sensors", "Bollards"],
-    answer: 0,
-    explanation: "An access control vestibule forces individuals to authenticate before proceeding."
-  },
-  {
-    id: "b10", domain: "Security Operations",
-    question: "A vulnerability scan shows no issues for Windows servers, but a significant vulnerability was announced last week. What describes this?",
-    type: "single",
-    options: ["Exploit", "Compensating controls", "Zero-day attack", "False negative"],
-    answer: 3,
-    explanation: "A false negative occurs when a scanner fails to detect a known vulnerability."
-  },
-  {
-    id: "b11", domain: "Network Security",
-    question: "Users are directed to a different IP than the bank's web server. Which attack is this?",
-    type: "single",
-    options: ["Deauthentication", "DDoS", "Buffer overflow", "DNS poisoning"],
-    answer: 3,
-    explanation: "DNS poisoning modifies DNS records to redirect users to a malicious IP address."
-  },
-  {
-    id: "b12", domain: "Governance & Compliance",
-    question: "A company performs a disaster recovery exercise during an annual meeting. What is this?",
-    type: "single",
-    options: ["Capacity planning", "Business impact analysis", "Continuity of operations", "Tabletop exercise"],
-    answer: 3,
-    explanation: "A tabletop exercise is a discussion-based exercise where participants walk through a simulated scenario."
-  },
-  {
-    id: "b13", domain: "Threats & Vulnerabilities",
-    question: "Security logs show 445+ failed password attempts for root from the same IP. What describes this?",
-    type: "single",
-    options: ["Spraying", "Downgrade", "Brute force", "DDoS"],
-    answer: 2,
-    explanation: "Brute force attacks systematically try many passwords against a single account."
-  },
-  {
-    id: "b14", domain: "Application Security",
-    question: "An attacker has sent more information than expected in an API call, allowing arbitrary code execution. What attack?",
-    type: "single",
-    options: ["Buffer overflow", "Replay attack", "Cross-site scripting", "DDoS"],
-    answer: 0,
-    explanation: "Buffer overflow occurs when input exceeds allocated memory, potentially allowing code execution."
-  },
-  {
-    id: "b15", domain: "Cloud Security",
-    question: "Which of the following are commonly associated with a hybrid cloud model? (Select TWO)",
-    type: "multiple",
-    options: ["Network protection mismatches", "Simplified compliance", "Data sovereignty concerns", "Reduced total cost"],
-    answer: [0, 2],
-    explanation: "Hybrid clouds face network security mismatches between on-prem and cloud, and data sovereignty concerns across jurisdictions."
-  },
+  { id: "b1", domain: "Security Operations", question: "A third-party gathers information without direct network access. Which describes this?", type: "single", options: ["Vulnerability scanning", "Passive reconnaissance", "Supply chain analysis", "Regulatory audit"], answer: 1, explanation: "Passive reconnaissance gathers info from public sources without interacting with target systems." },
+  { id: "b2", domain: "Network Security", question: "An email server received mail from an unauthorized server. Which determines disposition?", type: "single", options: ["SPF", "NAC", "DMARC", "DKIM"], answer: 2, explanation: "DMARC determines the disposition of messages that fail SPF and/or DKIM checks." },
+  { id: "b3", domain: "Threats & Vulnerabilities", question: "Which threat actor is MOST likely motivated by direct financial gain?", type: "single", options: ["Organized crime", "Hacktivist", "Nation state", "Shadow IT"], answer: 0, explanation: "Organized crime groups are primarily motivated by financial gain." },
+  { id: "b4", domain: "Security Architecture", question: "An ambulance dispatch network should prioritize which attribute?", type: "single", options: ["Integration costs", "Patch availability", "System availability", "Power usage"], answer: 2, explanation: "For emergency services, system availability is the highest priority." },
+  { id: "b5", domain: "Security Operations", question: "Which metric measures how often hardware is expected to fail?", type: "single", options: ["MTBF", "RTO", "MTTR", "RPO"], answer: 0, explanation: "MTBF (Mean Time Between Failures) measures expected time between hardware failures." },
+  { id: "b6", domain: "Threats & Vulnerabilities", question: "An attacker calls help desk pretending to be a director. What type of attack?", type: "single", options: ["Social engineering", "Supply chain", "Watering hole", "On-path"], answer: 0, explanation: "Social engineering manipulates people into performing actions or divulging information." },
+  { id: "b7", domain: "Governance & Compliance", question: "Two companies want a broad formal partnership agreement. Which document?", type: "single", options: ["SLA", "SOW", "MOA", "NDA"], answer: 2, explanation: "A Memorandum of Agreement (MOA) is a broad formal agreement between organizations." },
+  { id: "b8", domain: "Identity and Access Management", question: "A password policy lacks attempt restrictions and periodic changes. Which TWO fix this?", type: "multiple", options: ["Password complexity", "Password expiration", "Password reuse", "Account lockout", "Password managers"], answer: [1, 3], explanation: "Password expiration requires periodic changes; account lockout limits failed attempts." },
+  { id: "b9", domain: "Security Architecture", question: "What facilitates examining credentials of each person entering a data center?", type: "single", options: ["Access control vestibule", "Video surveillance", "Pressure sensors", "Bollards"], answer: 0, explanation: "An access control vestibule forces individuals to authenticate before proceeding." },
+  { id: "b10", domain: "Security Operations", question: "A scan shows no issues but a vulnerability was announced last week. What is this?", type: "single", options: ["Exploit", "Compensating controls", "Zero-day attack", "False negative"], answer: 3, explanation: "A false negative occurs when a scanner fails to detect a known vulnerability." },
+  { id: "b11", domain: "Network Security", question: "Users are directed to a different IP than the bank's server. Which attack?", type: "single", options: ["Deauthentication", "DDoS", "Buffer overflow", "DNS poisoning"], answer: 3, explanation: "DNS poisoning modifies DNS records to redirect users to a malicious IP." },
+  { id: "b12", domain: "Governance & Compliance", question: "A company performs DR exercise during an annual meeting. What is this?", type: "single", options: ["Capacity planning", "Business impact analysis", "Continuity of operations", "Tabletop exercise"], answer: 3, explanation: "A tabletop exercise is a discussion-based exercise walking through a simulated scenario." },
+  { id: "b13", domain: "Threats & Vulnerabilities", question: "445+ failed password attempts for root from one IP. What describes this?", type: "single", options: ["Spraying", "Downgrade", "Brute force", "DDoS"], answer: 2, explanation: "Brute force attacks systematically try many passwords against a single account." },
+  { id: "b14", domain: "Application Security", question: "An API call sends more data than expected, allowing code execution. What attack?", type: "single", options: ["Buffer overflow", "Replay attack", "Cross-site scripting", "DDoS"], answer: 0, explanation: "Buffer overflow occurs when input exceeds allocated memory, potentially allowing code execution." },
+  { id: "b15", domain: "Cloud Security", question: "Which are commonly associated with a hybrid cloud model? (Select TWO)", type: "multiple", options: ["Network protection mismatches", "Simplified compliance", "Data sovereignty concerns", "Reduced total cost"], answer: [0, 2], explanation: "Hybrid clouds face network security mismatches and data sovereignty concerns across jurisdictions." },
+  { id: "b16", domain: "Cryptography", question: "What does certificate pinning protect against?", type: "single", options: ["Brute force attacks", "Rogue CA issuing fraudulent certificates", "SQL injection", "Denial of service"], answer: 1, explanation: "Certificate pinning ensures only specific trusted certificates are accepted, preventing fraudulent CA-issued certs." },
+  { id: "b17", domain: "Incident Response", question: "What ensures evidence integrity throughout an investigation?", type: "single", options: ["Chain of custody", "Legal hold", "Data classification", "Incident timeline"], answer: 0, explanation: "Chain of custody documents who handled evidence, when, and how, ensuring its integrity." },
+  { id: "b18", domain: "Network Security", question: "Which feature prevents unauthorized devices from connecting to switch ports?", type: "single", options: ["VLAN trunking", "Port security", "Spanning tree", "Link aggregation"], answer: 1, explanation: "Port security restricts switch port access based on MAC addresses." },
+  { id: "b19", domain: "General Security Concepts", question: "Which principle requires that no single person can complete a critical task alone?", type: "single", options: ["Least privilege", "Separation of duties", "Need to know", "Job rotation"], answer: 1, explanation: "Separation of duties prevents fraud by requiring multiple people for critical tasks." },
+  { id: "b20", domain: "Application Security", question: "Which testing method reviews source code without executing the program?", type: "single", options: ["Dynamic analysis", "Fuzzing", "Static analysis", "Penetration testing"], answer: 2, explanation: "Static analysis (SAST) reviews source code without executing it to find vulnerabilities." },
 ];
 
-/* ========== SET C ========== */
+/* ========== SET C (20 questions) ========== */
 const setC: MCQItem[] = [
-  {
-    id: "c1", domain: "Cryptography",
-    question: "Valerie wants to use a certificate to handle multiple subdomains. What type of certificate?",
-    type: "single",
-    options: ["A self-signed certificate", "A root of trust certificate", "A CRL certificate", "A wildcard certificate"],
-    answer: 3,
-    explanation: "A wildcard certificate (e.g., *.example.com) covers all subdomains of a domain."
-  },
-  {
-    id: "c2", domain: "General Security Concepts",
-    question: "Using git is most frequently associated with what critical change management process?",
-    type: "single",
-    options: ["Having a backout plan", "Stakeholder analysis", "Version control", "Standard operating procedures"],
-    answer: 2,
-    explanation: "Git is the most widely used version control system."
-  },
-  {
-    id: "c3", domain: "Cryptography",
-    question: "Jacob wants to make it harder to crack a weak password by making it harder to test possible keys. What technique?",
-    type: "single",
-    options: ["Master keying", "Key stretching", "Key rotation", "Passphrase armoring"],
-    answer: 1,
-    explanation: "Key stretching makes brute-force slower by applying computationally intensive functions (PBKDF2, bcrypt)."
-  },
-  {
-    id: "c4", domain: "General Security Concepts",
-    question: "Log monitoring is an example of what control category?",
-    type: "single",
-    options: ["Technical", "Managerial", "Operational", "Physical"],
-    answer: 0,
-    explanation: "Log monitoring is implemented using automated systems, making it a technical control."
-  },
-  {
-    id: "c5", domain: "General Security Concepts",
-    question: "Sally wants a procedure for what to do if a change fails. What should she create?",
-    type: "single",
-    options: ["An impact analysis", "A backout plan", "A regression test", "A maintenance window"],
-    answer: 1,
-    explanation: "A backout plan documents steps to reverse a change if it fails."
-  },
-  {
-    id: "c6", domain: "Security Architecture",
-    question: "Alaina is concerned about vehicles impacting her backup generator near a parking lot. What should she install?",
-    type: "single",
-    options: ["A speed bump", "An access control vestibule", "Bollards", "A chain-link fence"],
-    answer: 2,
-    explanation: "Bollards are sturdy vertical posts designed to prevent vehicle access."
-  },
-  {
-    id: "c7", domain: "General Security Concepts",
-    question: "Ben deployed a DLP tool that flags data before emails are sent externally. What control type?",
-    type: "single",
-    options: ["Managerial", "Detective", "Corrective", "Preventive"],
-    answer: 3,
-    explanation: "A DLP tool that blocks or flags emails before they are sent is a preventive control."
-  },
-  {
-    id: "c8", domain: "General Security Concepts",
-    question: "Charles wants to reduce the threat scope of compromised credentials. Which control is best?",
-    type: "single",
-    options: ["Single sign-on", "Federation", "Zero trust", "Multifactor authentication"],
-    answer: 2,
-    explanation: "Zero trust reduces scope by requiring continuous verification regardless of network location."
-  },
-  {
-    id: "c9", domain: "Cryptography",
-    question: "Carol wants to obfuscate database data while still referring to data elements. What technique?",
-    type: "single",
-    options: ["Tokenization", "Encryption", "Data masking", "Data randomization"],
-    answer: 0,
-    explanation: "Tokenization replaces sensitive data with non-sensitive tokens maintaining referential integrity."
-  },
-  {
-    id: "c10", domain: "Network Security",
-    question: "A network admin wants users to authenticate with corporate credentials for Wi-Fi. What should be configured?",
-    type: "single",
-    options: ["WPA3", "802.1X", "PSK", "MFA"],
-    answer: 1,
-    explanation: "802.1X provides port-based network access control using corporate credentials via RADIUS."
-  },
-  {
-    id: "c11", domain: "Incident Response",
-    question: "A security admin has imaged an infected OS to a known-good version. Which IR step is this?",
-    type: "single",
-    options: ["Lessons learned", "Recovery", "Detection", "Containment"],
-    answer: 1,
-    explanation: "Re-imaging a system to restore it to a known-good state is part of the Recovery phase."
-  },
-  {
-    id: "c12", domain: "VPN & Remote Access",
-    question: "A company's VPN performs a posture assessment during login. What mitigation technique is this?",
-    type: "single",
-    options: ["Encryption", "Decommissioning", "Least privilege", "Configuration enforcement"],
-    answer: 3,
-    explanation: "Posture assessment during VPN login is a form of configuration enforcement."
-  },
-  {
-    id: "c13", domain: "Application Security",
-    question: "A user typed USER77' OR '1'='1 in a search field and all records were displayed. What attack?",
-    type: "single",
-    options: ["Cross-site scripting", "Buffer overflow", "SQL injection", "SSL stripping"],
-    answer: 2,
-    explanation: "The ' OR '1'='1 syntax is a classic SQL injection attack that bypasses authentication."
-  },
-  {
-    id: "c14", domain: "Mobile Device Management",
-    question: "A company is deploying a new app to field employees with various devices. Which deployment model?",
-    type: "single",
-    options: ["CYOD", "SSO", "COPE", "BYOD"],
-    answer: 2,
-    explanation: "COPE (Corporate-Owned, Personally Enabled) lets the company manage the device while allowing personal use."
-  },
-  {
-    id: "c15", domain: "Security Operations",
-    question: "A Linux admin downloads an ISO and the site shows a SHA256 hash. What does it verify?",
-    type: "single",
-    options: ["File was not corrupted during transfer", "Provides a decryption key", "Authenticates the site", "Confirms no malware"],
-    answer: 0,
-    explanation: "Comparing the SHA256 hash verifies the file's integrity — that it wasn't corrupted or tampered with during download."
-  },
+  { id: "c1", domain: "Cryptography", question: "Valerie wants to handle multiple subdomains with one certificate. What type?", type: "single", options: ["Self-signed certificate", "Root of trust certificate", "CRL certificate", "Wildcard certificate"], answer: 3, explanation: "A wildcard certificate (e.g., *.example.com) covers all subdomains of a domain." },
+  { id: "c2", domain: "General Security Concepts", question: "Using git is most frequently associated with which change management process?", type: "single", options: ["Backout plan", "Stakeholder analysis", "Version control", "Standard operating procedures"], answer: 2, explanation: "Git is the most widely used version control system." },
+  { id: "c3", domain: "Cryptography", question: "Jacob wants to make weak passwords harder to crack by slowing down key testing. What technique?", type: "single", options: ["Master keying", "Key stretching", "Key rotation", "Passphrase armoring"], answer: 1, explanation: "Key stretching makes brute-force slower by applying computationally intensive functions (PBKDF2, bcrypt)." },
+  { id: "c4", domain: "General Security Concepts", question: "Log monitoring is an example of what control category?", type: "single", options: ["Technical", "Managerial", "Operational", "Physical"], answer: 0, explanation: "Log monitoring is implemented using automated systems, making it a technical control." },
+  { id: "c5", domain: "General Security Concepts", question: "Sally wants a procedure for what to do if a change fails. What should she create?", type: "single", options: ["Impact analysis", "Backout plan", "Regression test", "Maintenance window"], answer: 1, explanation: "A backout plan documents steps to reverse a change if it fails." },
+  { id: "c6", domain: "Security Architecture", question: "Alaina is concerned about vehicles hitting her backup generator. What should she install?", type: "single", options: ["Speed bump", "Access control vestibule", "Bollards", "Chain-link fence"], answer: 2, explanation: "Bollards are sturdy vertical posts designed to prevent vehicle access." },
+  { id: "c7", domain: "General Security Concepts", question: "Ben deployed a DLP tool that flags data before emails are sent. What control type?", type: "single", options: ["Managerial", "Detective", "Corrective", "Preventive"], answer: 3, explanation: "A DLP tool that blocks or flags emails before they are sent is a preventive control." },
+  { id: "c8", domain: "General Security Concepts", question: "Charles wants to reduce scope of compromised credentials. Which control is best?", type: "single", options: ["Single sign-on", "Federation", "Zero trust", "Multifactor authentication"], answer: 2, explanation: "Zero trust reduces scope by requiring continuous verification regardless of network location." },
+  { id: "c9", domain: "Cryptography", question: "Carol wants to obfuscate database data while maintaining referential integrity. What technique?", type: "single", options: ["Tokenization", "Encryption", "Data masking", "Data randomization"], answer: 0, explanation: "Tokenization replaces sensitive data with non-sensitive tokens maintaining referential integrity." },
+  { id: "c10", domain: "Network Security", question: "A network admin wants users to authenticate with corporate credentials for Wi-Fi. What to configure?", type: "single", options: ["WPA3", "802.1X", "PSK", "MFA"], answer: 1, explanation: "802.1X provides port-based network access control using corporate credentials via RADIUS." },
+  { id: "c11", domain: "Incident Response", question: "A security admin has imaged an infected OS to a known-good version. Which IR step?", type: "single", options: ["Lessons learned", "Recovery", "Detection", "Containment"], answer: 1, explanation: "Re-imaging to restore a known-good state is part of the Recovery phase." },
+  { id: "c12", domain: "VPN & Remote Access", question: "A VPN performs posture assessment during login. What mitigation technique?", type: "single", options: ["Encryption", "Decommissioning", "Least privilege", "Configuration enforcement"], answer: 3, explanation: "Posture assessment during VPN login is configuration enforcement." },
+  { id: "c13", domain: "Application Security", question: "A user typed USER77' OR '1'='1 in a search field. What attack?", type: "single", options: ["Cross-site scripting", "Buffer overflow", "SQL injection", "SSL stripping"], answer: 2, explanation: "The ' OR '1'='1 syntax is a classic SQL injection attack." },
+  { id: "c14", domain: "Mobile Device Management", question: "Deploying a company app to field employees with various devices. Which model?", type: "single", options: ["CYOD", "SSO", "COPE", "BYOD"], answer: 2, explanation: "COPE (Corporate-Owned, Personally Enabled) lets the company manage while allowing personal use." },
+  { id: "c15", domain: "Security Operations", question: "A Linux admin downloads an ISO and sees a SHA256 hash. What does it verify?", type: "single", options: ["File was not corrupted during transfer", "Provides a decryption key", "Authenticates the site", "Confirms no malware"], answer: 0, explanation: "Comparing the SHA256 hash verifies the file's integrity during download." },
+  { id: "c16", domain: "Identity and Access Management", question: "Which protocol encrypts the entire authentication conversation, unlike RADIUS?", type: "single", options: ["LDAP", "TACACS+", "OAuth", "Kerberos"], answer: 1, explanation: "TACACS+ encrypts the entire authentication session, while RADIUS only encrypts the password." },
+  { id: "c17", domain: "Security Operations", question: "Which type of penetration test gives the tester no prior knowledge of the environment?", type: "single", options: ["White box", "Gray box", "Black box", "Blue box"], answer: 2, explanation: "Black box testing simulates a real attack where the tester has no prior knowledge of the target." },
+  { id: "c18", domain: "Threats & Vulnerabilities", question: "Which malware type operates entirely in memory without writing to disk?", type: "single", options: ["Ransomware", "Fileless malware", "Logic bomb", "Adware"], answer: 1, explanation: "Fileless malware operates in memory using legitimate tools, making it harder to detect." },
+  { id: "c19", domain: "Cloud Security", question: "Which tool provides visibility into sanctioned and unsanctioned cloud application usage?", type: "single", options: ["WAF", "CASB", "IDS", "NAC"], answer: 1, explanation: "A Cloud Access Security Broker (CASB) monitors and controls cloud application usage." },
+  { id: "c20", domain: "Network Security", question: "Which technology encrypts DNS queries to prevent eavesdropping?", type: "single", options: ["DNSSEC", "DNS over HTTPS (DoH)", "DNS amplification", "Split DNS"], answer: 1, explanation: "DNS over HTTPS encrypts DNS queries inside HTTPS connections, preventing eavesdropping." },
+];
+
+/* ========== SET D (20 questions) ========== */
+const setD: MCQItem[] = [
+  { id: "d1", domain: "General Security Concepts", question: "Which security model assumes breach and verifies every access request regardless of location?", type: "single", options: ["Defense in depth", "Zero trust", "Implicit trust", "Need to know"], answer: 1, explanation: "Zero trust assumes breach and requires verification for every access request regardless of network location." },
+  { id: "d2", domain: "Identity and Access Management", question: "Which technology allows users to log in once and access multiple applications across organizations?", type: "single", options: ["MFA", "SSO", "Federation", "RBAC"], answer: 2, explanation: "Federation extends SSO across organizational boundaries using trust relationships." },
+  { id: "d3", domain: "Network Security", question: "Which technique divides a network into smaller segments to limit lateral movement?", type: "single", options: ["Network segmentation", "Port mirroring", "Load balancing", "QoS"], answer: 0, explanation: "Network segmentation limits lateral movement by isolating network segments with access controls." },
+  { id: "d4", domain: "Cryptography", question: "What is the primary purpose of a Certificate Revocation List (CRL)?", type: "single", options: ["List all valid certificates", "Identify revoked certificates before expiration", "Store encryption keys", "Manage certificate renewals"], answer: 1, explanation: "A CRL lists certificates that have been revoked before their expiration date." },
+  { id: "d5", domain: "Threats & Vulnerabilities", question: "Which characteristic best describes an Advanced Persistent Threat (APT)?", type: "single", options: ["Automated scanning tools", "Long-term, targeted, well-funded attacks", "Opportunistic script kiddie attacks", "Denial of service campaigns"], answer: 1, explanation: "APTs are sophisticated, long-term, targeted attacks typically backed by nation states or organized groups." },
+  { id: "d6", domain: "Security Architecture", question: "A load balancer can provide which security benefit?", type: "single", options: ["Encryption at rest", "DDoS mitigation through traffic distribution", "Antivirus scanning", "Certificate revocation"], answer: 1, explanation: "Load balancers distribute traffic across servers, helping mitigate DDoS attacks." },
+  { id: "d7", domain: "Cloud Security", question: "What is a key security concern specific to containerized applications?", type: "single", options: ["Physical access to servers", "Container image vulnerabilities and escape attacks", "Cable management", "Power redundancy"], answer: 1, explanation: "Containers can have vulnerable base images, and container escape attacks can compromise the host." },
+  { id: "d8", domain: "Incident Response", question: "Which should be done FIRST when a compromised system is discovered?", type: "single", options: ["Wipe and reimage the system", "Isolate it from the network", "Notify law enforcement", "Update antivirus signatures"], answer: 1, explanation: "Isolating the system prevents further damage while preserving evidence for investigation." },
+  { id: "d9", domain: "Security Operations", question: "What does SOAR stand for in security operations?", type: "single", options: ["Security Orchestration, Automation, and Response", "System Operations and Risk Analysis", "Security Operations and Auditing Report", "Standard Operating Automated Response"], answer: 0, explanation: "SOAR platforms orchestrate security tools, automate repetitive tasks, and streamline incident response." },
+  { id: "d10", domain: "Application Security", question: "Which OWASP Top 10 category includes SQL injection and XSS?", type: "single", options: ["Broken access control", "Injection", "Security misconfiguration", "Cryptographic failures"], answer: 1, explanation: "Injection vulnerabilities (including SQLi and XSS) are a major OWASP Top 10 category." },
+  { id: "d11", domain: "Governance & Compliance", question: "What document tracks identified risks, their likelihood, impact, and mitigation status?", type: "single", options: ["Incident report", "Risk register", "Audit log", "Change management form"], answer: 1, explanation: "A risk register is a central document that tracks risks, their assessments, and mitigation plans." },
+  { id: "d12", domain: "Mobile Device Management", question: "What is the primary security risk of jailbreaking or rooting a mobile device?", type: "single", options: ["Improved performance", "Bypassing built-in security controls", "Extended battery life", "Faster OS updates"], answer: 1, explanation: "Jailbreaking/rooting removes manufacturer security controls, exposing the device to malware." },
+  { id: "d13", domain: "Network Security", question: "What technology provides centralized, programmable control of network infrastructure?", type: "single", options: ["SDN (Software-Defined Networking)", "MPLS", "ATM", "Token Ring"], answer: 0, explanation: "SDN separates the control plane from the data plane, enabling centralized programmable management." },
+  { id: "d14", domain: "Cryptography", question: "What does Perfect Forward Secrecy (PFS) provide?", type: "single", options: ["Faster encryption", "Session keys cannot decrypt past sessions if long-term key is compromised", "Backward compatibility with older protocols", "Certificate chain validation"], answer: 1, explanation: "PFS ensures that compromise of long-term keys does not compromise past session keys." },
+  { id: "d15", domain: "Threats & Vulnerabilities", question: "Which attack targets the software supply chain to compromise end users?", type: "single", options: ["Watering hole", "Supply chain attack", "Phishing", "Brute force"], answer: 1, explanation: "Supply chain attacks compromise software during development or distribution to reach end users." },
+  { id: "d16", domain: "General Security Concepts", question: "What is the most effective way to reduce the risk of social engineering attacks?", type: "single", options: ["Install more firewalls", "Security awareness training", "Implement VPN", "Increase password length"], answer: 1, explanation: "Security awareness training educates users to recognize and resist social engineering attempts." },
+  { id: "d17", domain: "Identity and Access Management", question: "What does PAM (Privileged Access Management) primarily control?", type: "single", options: ["Email encryption", "Access to administrative and high-privilege accounts", "Physical badge access", "Wireless authentication"], answer: 1, explanation: "PAM manages and monitors access to privileged accounts to prevent misuse." },
+  { id: "d18", domain: "Security Architecture", question: "What type of network isolation completely disconnects a system from all other networks?", type: "single", options: ["DMZ", "VLAN", "Air gap", "VPN"], answer: 2, explanation: "An air gap physically isolates a system from all other networks, including the internet." },
+  { id: "d19", domain: "Cloud Security", question: "In a serverless computing model, what is the customer responsible for securing?", type: "single", options: ["Physical servers", "Operating system patches", "Application code and data", "Network infrastructure"], answer: 2, explanation: "In serverless (FaaS), the customer only manages application code and data; the provider handles everything else." },
+  { id: "d20", domain: "Incident Response", question: "What should an incident communication plan include?", type: "single", options: ["Only technical details for the SOC team", "Stakeholder notification procedures and escalation paths", "Marketing materials for public relations", "Source code repository access"], answer: 1, explanation: "An incident communication plan defines who to notify, when, and through which escalation paths." },
+];
+
+/* ========== SET E (20 questions) ========== */
+const setE: MCQItem[] = [
+  { id: "e1", domain: "Network Security", question: "Which is a security concern unique to IPv6 deployments?", type: "single", options: ["Lack of encryption support", "Dual-stack configurations creating bypass paths", "Inability to use firewalls", "Shorter address space"], answer: 1, explanation: "Dual-stack (IPv4+IPv6) can create unmonitored IPv6 paths that bypass IPv4 security controls." },
+  { id: "e2", domain: "Cryptography", question: "Which property of blockchain technology ensures data integrity?", type: "single", options: ["Centralized authority", "Cryptographic hash chaining", "Secret key sharing", "Data compression"], answer: 1, explanation: "Each block contains a hash of the previous block, creating a tamper-evident chain." },
+  { id: "e3", domain: "Threats & Vulnerabilities", question: "What technique do 'living off the land' attacks use?", type: "single", options: ["Custom malware binaries", "Legitimate system tools (PowerShell, WMI)", "Physical access to servers", "Zero-day exploits only"], answer: 1, explanation: "Living off the land attacks use built-in OS tools to avoid detection by antimalware." },
+  { id: "e4", domain: "General Security Concepts", question: "Defense in depth is BEST described as:", type: "single", options: ["Using the strongest single security control", "Layering multiple security controls", "Focusing all resources on perimeter security", "Implementing security through obscurity"], answer: 1, explanation: "Defense in depth layers multiple controls so if one fails, others still provide protection." },
+  { id: "e5", domain: "Identity and Access Management", question: "What does just-in-time (JIT) access provide?", type: "single", options: ["Permanent admin access for efficiency", "Temporary elevated privileges only when needed", "Read-only access to all systems", "Shared admin credentials"], answer: 1, explanation: "JIT access grants temporary elevated privileges for a limited time, reducing the attack surface." },
+  { id: "e6", domain: "Security Architecture", question: "What hardware technology provides an isolated execution environment for sensitive operations?", type: "single", options: ["GPU", "Secure enclave / TPM", "RAID controller", "NIC"], answer: 1, explanation: "Secure enclaves and TPMs provide hardware-isolated environments for cryptographic operations." },
+  { id: "e7", domain: "Cloud Security", question: "A CASB operates between cloud users and cloud providers. What does it enforce?", type: "single", options: ["Physical security", "Security policies for cloud access", "Cable management", "Power distribution"], answer: 1, explanation: "CASBs enforce security policies including DLP, access control, and threat protection for cloud services." },
+  { id: "e8", domain: "Incident Response", question: "What is the goal of root cause analysis (RCA) after an incident?", type: "single", options: ["Assign blame to individuals", "Identify the underlying cause to prevent recurrence", "Calculate financial losses only", "Restore systems quickly"], answer: 1, explanation: "RCA identifies the fundamental cause of an incident to prevent it from happening again." },
+  { id: "e9", domain: "Security Operations", question: "What distinguishes threat hunting from automated monitoring?", type: "single", options: ["It only uses signature-based detection", "It proactively searches for threats that evade automated tools", "It replaces SIEM systems", "It requires no human intervention"], answer: 1, explanation: "Threat hunting proactively searches for threats that automated tools may miss." },
+  { id: "e10", domain: "Application Security", question: "Which is a key security concern for REST APIs?", type: "single", options: ["Physical port security", "Broken authentication and excessive data exposure", "Cable length limitations", "Disk encryption"], answer: 1, explanation: "REST APIs are vulnerable to broken authentication, excessive data exposure, and injection attacks." },
+  { id: "e11", domain: "Governance & Compliance", question: "What role is responsible for ensuring an organization complies with data privacy regulations?", type: "single", options: ["CISO", "Data Privacy Officer (DPO)", "Network Administrator", "Help Desk Manager"], answer: 1, explanation: "The DPO oversees data protection strategy and compliance with regulations like GDPR." },
+  { id: "e12", domain: "Mobile Device Management", question: "Which is the GREATEST risk of a BYOD policy?", type: "single", options: ["Higher device costs", "Mixing personal and corporate data on unmanaged devices", "Faster OS updates", "Better user satisfaction"], answer: 1, explanation: "BYOD mixes personal and corporate data on devices the organization cannot fully control." },
+  { id: "e13", domain: "Network Security", question: "What is the primary benefit of DNS over HTTPS (DoH)?", type: "single", options: ["Faster DNS resolution", "Encrypted DNS queries preventing ISP eavesdropping", "Reduced network latency", "Automatic DNS caching"], answer: 1, explanation: "DoH encrypts DNS queries inside HTTPS, preventing eavesdropping by ISPs and attackers." },
+  { id: "e14", domain: "Cryptography", question: "What is the primary threat that quantum computing poses to current cryptography?", type: "single", options: ["Slower hashing speeds", "Breaking current asymmetric algorithms (RSA, ECC)", "Eliminating the need for encryption", "Making symmetric encryption stronger"], answer: 1, explanation: "Quantum computers could break RSA and ECC using Shor's algorithm, requiring post-quantum cryptography." },
+  { id: "e15", domain: "Threats & Vulnerabilities", question: "What is credential stuffing?", type: "single", options: ["Creating complex passwords", "Using stolen credentials from one breach to access other services", "Encrypting password databases", "Rotating credentials regularly"], answer: 1, explanation: "Credential stuffing uses leaked username/password pairs from breaches to try logging into other services." },
+  { id: "e16", domain: "General Security Concepts", question: "What does configuration management help prevent?", type: "single", options: ["Physical theft", "Configuration drift and unauthorized changes", "Social engineering", "Natural disasters"], answer: 1, explanation: "Configuration management maintains consistent settings and prevents unauthorized configuration changes." },
+  { id: "e17", domain: "Identity and Access Management", question: "Which authentication method eliminates passwords entirely?", type: "single", options: ["SSO", "TOTP", "Passwordless (FIDO2/passkeys)", "RADIUS"], answer: 2, explanation: "Passwordless authentication using FIDO2/passkeys replaces passwords with cryptographic keys." },
+  { id: "e18", domain: "Security Architecture", question: "What does Secure Boot prevent?", type: "single", options: ["Network attacks", "Unauthorized OS and bootloader modifications", "SQL injection", "Physical tampering"], answer: 1, explanation: "Secure Boot verifies the digital signature of the bootloader and OS to prevent tampering." },
+  { id: "e19", domain: "Cloud Security", question: "In the shared responsibility model, which is ALWAYS the customer's responsibility?", type: "single", options: ["Physical facility security", "Data classification and access control", "Hypervisor patching", "Network backbone"], answer: 1, explanation: "Regardless of cloud model (IaaS/PaaS/SaaS), data classification and access control are always the customer's responsibility." },
+  { id: "e20", domain: "Security Operations", question: "What is responsible disclosure?", type: "single", options: ["Publicly announcing vulnerabilities immediately", "Reporting vulnerabilities to the vendor before public disclosure", "Ignoring vulnerabilities found during testing", "Selling vulnerability information"], answer: 1, explanation: "Responsible disclosure gives vendors time to patch before the vulnerability is made public." },
 ];
 
 export const mcqSets: MCQSet[] = [
   { id: 'A', label: 'Set A', questions: setA },
   { id: 'B', label: 'Set B', questions: setB },
   { id: 'C', label: 'Set C', questions: setC },
+  { id: 'D', label: 'Set D', questions: setD },
+  { id: 'E', label: 'Set E', questions: setE },
 ];
 
 export const mcqQuestions = setA;
 
-// Get all unique domains across all sets
 export function getAllMCQDomains(): string[] {
   const domains = new Set<string>();
   mcqSets.forEach(set => set.questions.forEach(q => domains.add(q.domain)));

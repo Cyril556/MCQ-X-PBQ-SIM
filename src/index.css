@@ -149,15 +149,13 @@
   background-color: hsl(48 100% 50% / 0.08);
 }
 
-/* Timer states */
-.timer-warning {
-  color: hsl(38 92% 50%) !important;
-  animation: pulse-success 1s ease-in-out infinite;
+/* Button hover lift */
+button {
+  transition: transform 0.1s ease;
 }
 
-.timer-critical {
-  color: hsl(0 72% 51%) !important;
-  animation: pulse-success 0.5s ease-in-out infinite;
+button:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 /* Focus outline */
