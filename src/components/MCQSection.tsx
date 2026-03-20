@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Flag, CheckCircle2, XCircle, Info } from 'lucide-react';
+import { Flag, CheckCircle2, XCircle } from 'lucide-react';
 import { MCQItem } from '@/data/mcq';
-import { useToast } from '@/hooks/use-toast';
+import { FeedbackDialog, FeedbackItem } from '@/components/FeedbackDialog';
 
 interface MCQSectionProps {
   questions: MCQItem[];
@@ -13,68 +13,105 @@ interface MCQSectionProps {
   onSubmit: () => void;
 }
 
+function isMCQCorrect(q: MCQItem, ans: number | number[] | undefined): boolean {
+  if (ans === undefined) return false;
+  if (q.type === 'single') return ans === q.answer;
+  const sel = [...(ans as number[])].sort();
+  const cor = [...(q.answer as number[])].sort();
+  return JSON.stringify(sel) === JSON.stringify(cor);
+}
+
 export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, submitted, onSubmit }: MCQSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [checkedQuestions, setCheckedQuestions] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
+  const [showFeedback, setShowFeedback] = useState(false);
   const question = questions[currentIndex];
 
   if (!question) return <p className="text-muted-foreground">No MCQ questions loaded.</p>;
 
   const currentAnswer = answers[question.id];
   const hasAnswered = currentAnswer !== undefined;
-  const isChecked = checkedQuestions.has(question.id);
+  const showInline = submitted && hasAnswered;
 
-  const isCorrectOption = (optIdx: number) => {
-    if (question.type === 'single') return question.answer === optIdx;
-    return (question.answer as number[]).includes(optIdx);
+  const isCorrectOption = (idx: number) => {
+    if (question.type === 'single') return question.answer === idx;
+    return (question.answer as number[]).includes(idx);
   };
 
-  const isSelected = (optIdx: number) => {
+  const isSelected = (idx: number) => {
     if (!hasAnswered) return false;
-    if (question.type === 'single') return currentAnswer === optIdx;
-    return (currentAnswer as number[]).includes(optIdx);
+    if (question.type === 'single') return currentAnswer === idx;
+    return (currentAnswer as number[]).includes(idx);
   };
 
-  const handleSelect = (optIdx: number) => {
+  const handleSelect = (idx: number) => {
     if (submitted) return;
     if (question.type === 'single') {
-      onAnswer(question.id, optIdx);
+      onAnswer(question.id, idx);
     } else {
       const prev = (currentAnswer as number[] | undefined) || [];
-      const next = prev.includes(optIdx) ? prev.filter((i) => i !== optIdx) : [...prev, optIdx];
+      const next = prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx];
       onAnswer(question.id, next);
     }
   };
 
-  // Only show feedback for answered questions after submission
-  const showFeedback = (submitted || isChecked) && hasAnswered;
+  const answeredCount = questions.filter(q => answers[q.id] !== undefined).length;
 
-  const isCurrentCorrect = () => {
-    if (!hasAnswered) return false;
-    if (question.type === 'single') return currentAnswer === question.answer;
-    const sel = [...(currentAnswer as number[])].sort();
-    const cor = [...(question.answer as number[])].sort();
-    return JSON.stringify(sel) === JSON.stringify(cor);
+  const handleCheckAnswers = () => {
+    onSubmit();
+    setShowFeedback(true);
   };
 
-  const answeredCount = questions.filter(q => answers[q.id] !== undefined).length;
+  const feedbackItems: FeedbackItem[] = questions
+    .filter(q => answers[q.id] !== undefined)
+    .map(q => {
+      const ans = answers[q.id];
+      const correct = isMCQCorrect(q, ans);
+      let userAnswer = '';
+      let correctAnswer = '';
+
+      if (q.type === 'single') {
+        userAnswer = q.options[ans as number] || '—';
+        correctAnswer = q.options[q.answer as number] || '—';
+      } else {
+        userAnswer = (ans as number[]).map(i => q.options[i]).join(', ') || '—';
+        correctAnswer = (q.answer as number[]).map(i => q.options[i]).join(', ') || '—';
+      }
+
+      return { question: q.question, isCorrect: correct, userAnswer, correctAnswer, explanation: q.explanation };
+    });
+
+  const score = feedbackItems.filter(f => f.isCorrect).length;
 
   return (
     <div className="flex flex-col gap-4">
+      <FeedbackDialog
+        open={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        title="MCQ Results"
+        items={feedbackItems}
+        score={score}
+        total={feedbackItems.length}
+      />
+
       {/* Navigation */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-1.5 flex-wrap">
         {questions.map((q, i) => {
           const answered = answers[q.id] !== undefined;
           const flagged = flags.includes(q.id);
+          const correct = submitted && answered && isMCQCorrect(q, answers[q.id]);
+          const wrong = submitted && answered && !isMCQCorrect(q, answers[q.id]);
           return (
             <button
               key={q.id}
               onClick={() => setCurrentIndex(i)}
-              aria-label={`MCQ Question ${i + 1}${flagged ? ', flagged' : ''}${answered ? ', answered' : ''}`}
+              aria-label={`MCQ ${i + 1}${flagged ? ', flagged' : ''}${answered ? ', answered' : ''}`}
               className={`relative w-9 h-9 rounded-md text-xs font-mono font-bold transition-all ${
                 i === currentIndex
                   ? 'bg-primary text-primary-foreground ring-2 ring-primary/50'
+                  : correct
+                  ? 'bg-success/20 text-success border border-success/30'
+                  : wrong
+                  ? 'bg-destructive/20 text-destructive border border-destructive/30'
                   : answered
                   ? 'bg-muted text-foreground'
                   : 'bg-card text-muted-foreground border border-border hover:border-primary/50'
@@ -93,7 +130,7 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
           <span className="text-xs font-mono text-primary uppercase tracking-wider">{question.domain}</span>
           <button
             onClick={() => onToggleFlag(question.id)}
-            aria-label={flags.includes(question.id) ? 'Unflag question' : 'Flag for review'}
+            aria-label={flags.includes(question.id) ? 'Unflag' : 'Flag for review'}
             className={`p-2 rounded-md transition-colors ${
               flags.includes(question.id) ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:text-accent'
             }`}
@@ -103,9 +140,7 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
         </div>
 
         <h3 className="text-base font-semibold text-foreground mb-1">{question.question}</h3>
-        {question.type === 'multiple' && (
-          <p className="text-xs text-muted-foreground mb-4 italic">Select all that apply</p>
-        )}
+        {question.type === 'multiple' && <p className="text-xs text-muted-foreground mb-4 italic">Select all that apply</p>}
 
         <div className="flex flex-col gap-2 mt-4">
           {question.options.map((opt, idx) => {
@@ -113,98 +148,45 @@ export function MCQSection({ questions, answers, flags, onAnswer, onToggleFlag, 
             const correct = isCorrectOption(idx);
 
             let optionClass = 'bg-muted/50 border-border text-foreground hover:border-primary/40';
-            if (showFeedback && selected && correct) {
-              optionClass = 'bg-success/10 border-success text-success animate-pulse-success';
-            } else if (showFeedback && selected && !correct) {
-              optionClass = 'bg-destructive/10 border-destructive text-destructive animate-shake';
-            } else if (showFeedback && !selected && correct) {
-              optionClass = 'bg-success/5 border-success/50 text-success';
-            } else if (selected) {
-              optionClass = 'bg-primary/10 border-primary text-foreground';
-            }
+            if (showInline && selected && correct) optionClass = 'bg-success/10 border-success text-success';
+            else if (showInline && selected && !correct) optionClass = 'bg-destructive/10 border-destructive text-destructive';
+            else if (showInline && !selected && correct) optionClass = 'bg-success/5 border-success/50 text-success';
+            else if (selected) optionClass = 'bg-primary/10 border-primary text-foreground';
 
             return (
-              <button
-                key={idx}
-                onClick={() => handleSelect(idx)}
-                disabled={submitted}
-                className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm text-left transition-all ${optionClass}`}
-              >
-                <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">
-                  {String.fromCharCode(65 + idx)}
-                </span>
+              <button key={idx} onClick={() => handleSelect(idx)} disabled={submitted}
+                className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm text-left transition-all ${optionClass}`}>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">{String.fromCharCode(65 + idx)}</span>
                 <span className="flex-1">{opt}</span>
-                {showFeedback && selected && correct && <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />}
-                {showFeedback && selected && !correct && <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />}
+                {showInline && selected && correct && <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />}
+                {showInline && selected && !correct && <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />}
               </button>
             );
           })}
         </div>
 
-        {/* Explanation - only for answered questions */}
-        {showFeedback && (
-          <div className={`mt-4 p-4 rounded-md border animate-fade-in ${
-            isCurrentCorrect() ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'
-          }`}>
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="h-4 w-4 text-accent" />
-              <p className="text-xs font-mono text-accent uppercase font-bold">
-                {isCurrentCorrect() ? '✓ Correct' : '✗ Incorrect'}
-              </p>
-            </div>
-            <p className="text-sm text-muted-foreground">{question.explanation}</p>
-          </div>
-        )}
-
-        {/* Unanswered notice when submitted */}
-        {submitted && !hasAnswered && (
-          <div className="mt-4 p-4 rounded-md border border-border bg-muted/30 animate-fade-in">
-            <p className="text-xs font-mono text-muted-foreground">This question was not answered and was not scored.</p>
-          </div>
-        )}
-
         {/* Prev / Next */}
         <div className="flex justify-between mt-6">
-          <button
-            onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-            disabled={currentIndex === 0}
-            className="px-4 py-2 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted disabled:opacity-30 transition-all"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
-            disabled={currentIndex === questions.length - 1}
-            className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-30 transition-all"
-          >
-            Next
-          </button>
+          <button onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} className="px-4 py-2 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted disabled:opacity-30 transition-all">Previous</button>
+          <button onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))} disabled={currentIndex === questions.length - 1} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-30 transition-all">Next</button>
         </div>
       </div>
 
-      {/* Check This Question button */}
-      {!submitted && (
-        <div className="flex flex-col items-center gap-2 mt-2">
-          <p className="text-xs text-muted-foreground font-mono">
-            Answer the question to check your response
-          </p>
-          <button
-            onClick={() => {
-              setCheckedQuestions(prev => new Set(prev).add(question.id));
-              const correct = isCurrentCorrect();
-              toast({
-                title: correct ? "Correct!" : "Incorrect",
-                description: correct ? "Great job!" : "Check the explanation below.",
-                variant: correct ? "default" : "destructive",
-              });
-            }}
-            disabled={!hasAnswered || isChecked}
-            className="px-6 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity shadow-lg disabled:opacity-40"
-          >
-            {isChecked ? 'Checked' : 'Check This Question'}
-          </button>
-        </div>
-      )}
+      {/* Check Answers */}
+      <div className="flex flex-col items-center gap-2 mt-2">
+        <p className="text-xs text-muted-foreground font-mono">
+          {answeredCount}/{questions.length} answered{submitted ? ' • Checked ✓' : ''}
+        </p>
+        <button
+          onClick={submitted ? () => setShowFeedback(true) : handleCheckAnswers}
+          disabled={answeredCount === 0}
+          className={`px-6 py-3 rounded-lg text-sm font-bold transition-opacity shadow-lg disabled:opacity-40 ${
+            submitted ? 'bg-muted text-foreground hover:bg-muted/80' : 'bg-accent text-accent-foreground hover:opacity-90'
+          }`}
+        >
+          {submitted ? 'View Results' : `Check Answers (${answeredCount})`}
+        </button>
+      </div>
     </div>
   );
 }

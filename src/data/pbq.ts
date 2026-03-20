@@ -56,7 +56,6 @@ export interface PBQSet {
 
 /* ========== SET A ========== */
 const setA: PBQQuestion[] = [
-  // 1. Firewall - DMZ Web Server
   {
     id: "pbq-a-fw1",
     domain: "Firewall & ACL Configuration",
@@ -74,11 +73,10 @@ const setA: PBQQuestion[] = [
     correctActions: ["ALLOW", "ALLOW", "ALLOW", "DENY", "DENY"],
     explanation: "HTTP (80) and HTTPS (443) must be allowed for public web access. SSH (22) is allowed only from the management subnet. MySQL (3306) and Telnet (23) should always be denied from external sources in a DMZ.",
   },
-  // 2. Matching - Cryptographic Algorithms
   {
     id: "pbq-a-match1",
     domain: "Cryptography",
-    title: "Match Cryptographic Algorithms",
+    title: "Match Cryptographic Algorithms to Categories",
     description: "Drag each cryptographic algorithm to its correct category.",
     type: "matching",
     matchingItems: [
@@ -90,9 +88,8 @@ const setA: PBQQuestion[] = [
       { source: "ECC", target: "Asymmetric Encryption" },
     ],
     matchingTargets: ["Symmetric Encryption", "Asymmetric Encryption", "Hashing", "Key Exchange"],
-    explanation: "AES-256 and 3DES use the same key for encryption/decryption (symmetric). RSA and ECC use key pairs (asymmetric). SHA-256 produces a fixed-length digest (hashing). Diffie-Hellman enables two parties to establish a shared secret over an insecure channel (key exchange).",
+    explanation: "AES-256 and 3DES use the same key for encryption/decryption (symmetric). RSA and ECC use key pairs (asymmetric). SHA-256 produces a fixed-length digest (hashing). Diffie-Hellman enables two parties to establish a shared secret over an insecure channel.",
   },
-  // 3. Classification - Security Control Types
   {
     id: "pbq-a-class1",
     domain: "General Security Concepts",
@@ -108,14 +105,13 @@ const setA: PBQQuestion[] = [
       { item: "System logs transferred automatically to SIEM", category: "Technical", categories: [] },
       { item: "Firewall blocks unauthorized traffic", category: "Technical", categories: [] },
     ],
-    explanation: "Operational controls are performed by people (guards, awareness training). Managerial controls are administrative policies and procedures. Physical controls limit physical access (generators, card readers, fencing). Technical controls are implemented by systems (firewalls, SIEM, encryption).",
+    explanation: "Operational controls are performed by people (guards, awareness training). Managerial controls are administrative policies and procedures. Physical controls limit physical access (generators, card readers). Technical controls are implemented by systems (firewalls, SIEM, encryption).",
   },
-  // 4. Ordering - Incident Response Steps
   {
     id: "pbq-a-order1",
     domain: "Incident Response",
     title: "Order Incident Response Steps",
-    description: "Drag-and-drop the incident response steps into the correct order according to NIST SP 800-61.",
+    description: "Arrange the incident response steps in the correct order according to NIST SP 800-61.",
     type: "ordering",
     orderItems: [
       { step: "Preparation", correctPosition: 0 },
@@ -127,7 +123,6 @@ const setA: PBQQuestion[] = [
     ],
     explanation: "The NIST incident response lifecycle: Preparation establishes policies and tools. Detection identifies incidents. Containment limits damage. Eradication removes the threat. Recovery restores systems. Lessons Learned documents improvements.",
   },
-  // 5. Placement - Cloud Security Controls
   {
     id: "pbq-a-place1",
     domain: "Cloud Security",
@@ -145,7 +140,6 @@ const setA: PBQQuestion[] = [
     ],
     explanation: "MFA and conditional access protect identity. CASB and TLS protect network communications. Encryption at rest protects stored data. WAF protects web applications from attacks like SQLi and XSS.",
   },
-  // 6. Matching - VPN & Remote Access
   {
     id: "pbq-a-match2",
     domain: "VPN & Remote Access",
@@ -162,7 +156,6 @@ const setA: PBQQuestion[] = [
     matchingTargets: ["Network-layer VPN with strong authentication", "Application-layer VPN via web browser", "Modern lightweight VPN with minimal code", "Layer 2 tunneling often paired with IPSec", "Legacy VPN protocol with known vulnerabilities"],
     explanation: "IPSec/IKEv2 operates at the network layer with strong crypto. SSL VPN works through browsers. WireGuard is a modern, efficient protocol. L2TP tunnels at Layer 2 and needs IPSec for encryption. PPTP is outdated and insecure.",
   },
-  // 7. Classification - Malware Types
   {
     id: "pbq-a-class2",
     domain: "Threats & Vulnerabilities",
@@ -180,14 +173,13 @@ const setA: PBQQuestion[] = [
     ],
     explanation: "Ransomware encrypts files and demands payment. Trojans disguise as legitimate software. Worms self-replicate without user interaction. Rootkits hide malicious activity at the OS level.",
   },
-  // 8. Firewall - VPN Concentrator
   {
     id: "pbq-a-fw2",
     domain: "VPN & Remote Access",
     title: "Secure VPN Concentrator Rules",
-    description: "Configure firewall rules for a company's VPN concentrator. Set each rule's action to ALLOW or DENY.",
+    description: "Configure firewall rules for a company's VPN concentrator.",
     type: "firewall",
-    firewallScenario: "The VPN concentrator (10.0.0.1) must accept OpenVPN (port 1194/UDP) and SSL VPN (port 443/TCP) from any source. Direct RDP (port 3389) from the internet must be denied. Internal DNS (port 53) should be allowed only from VPN clients (10.8.0.0/24). FTP (port 21) must be denied from all sources.",
+    firewallScenario: "The VPN concentrator (10.0.0.1) must accept OpenVPN (1194/UDP) and SSL VPN (443/TCP) from any source. RDP (3389) from the internet must be denied. DNS (53) allowed only from VPN clients (10.8.0.0/24). FTP (21) denied from all.",
     firewallRules: [
       { ruleId: 1, sourceIP: "Any", destIP: "10.0.0.1", port: "1194", protocol: "UDP", action: "" },
       { ruleId: 2, sourceIP: "Any", destIP: "10.0.0.1", port: "443", protocol: "TCP", action: "" },
@@ -196,9 +188,8 @@ const setA: PBQQuestion[] = [
       { ruleId: 5, sourceIP: "Any", destIP: "Any", port: "21", protocol: "TCP", action: "" },
     ],
     correctActions: ["ALLOW", "ALLOW", "DENY", "ALLOW", "DENY"],
-    explanation: "OpenVPN (1194/UDP) and SSL VPN (443/TCP) must be allowed for remote access. RDP (3389) from the internet is a major security risk. DNS (53) is allowed only from VPN clients. FTP (21) transmits credentials in cleartext.",
+    explanation: "OpenVPN (1194/UDP) and SSL VPN (443/TCP) must be allowed for remote access. RDP from the internet is a major security risk. DNS is allowed only from VPN clients. FTP transmits credentials in cleartext.",
   },
-  // 9. Placement - Nmap & tcpdump Tool Usage
   {
     id: "pbq-a-place2",
     domain: "Network Reconnaissance",
@@ -216,7 +207,6 @@ const setA: PBQQuestion[] = [
     ],
     explanation: "nmap -sS performs SYN (stealth) port scans. nmap -sV detects service versions. nmap -O fingerprints the operating system. tcpdump captures raw network packets for analysis.",
   },
-  // 10. Classification - HTTP & Scripting Attacks
   {
     id: "pbq-a-class3",
     domain: "Application Security",
@@ -238,12 +228,11 @@ const setA: PBQQuestion[] = [
 
 /* ========== SET B ========== */
 const setB: PBQQuestion[] = [
-  // 1. Matching - Attack Types (Messer Exam A)
   {
     id: "pbq-b-match1",
     domain: "Threats & Vulnerabilities",
-    title: "Match Attack Descriptions to Attack Types",
-    description: "Match each description with the most accurate attack type. Not all attack types will be used.",
+    title: "Match Attack Descriptions to Types",
+    description: "Match each description with the most accurate attack type. Not all types will be used.",
     type: "matching",
     matchingItems: [
       { source: "Attacker obtains bank details by calling the victim", target: "Vishing" },
@@ -253,13 +242,12 @@ const setB: PBQQuestion[] = [
       { source: "Attacker captures all login credentials typed in 24 hours", target: "Keylogger" },
     ],
     matchingTargets: ["Vishing", "Injection", "On-path", "DDoS", "Keylogger", "RFID Cloning", "Rootkit", "Supply Chain"],
-    explanation: "Vishing is phone-based social engineering. SQL injection accesses databases through web apps. On-path (MitM) intercepts communications. DDoS uses multiple attackers to overwhelm services. Keyloggers capture all keyboard input.",
+    explanation: "Vishing is phone-based social engineering. SQL injection accesses databases through web apps. On-path (MitM) intercepts communications. DDoS uses multiple attackers to overwhelm services. Keyloggers capture keyboard input.",
   },
-  // 2. Placement - Physical Security Controls (Messer Exam A)
   {
     id: "pbq-b-place1",
     domain: "Security Architecture",
-    title: "Place Physical Security Controls at Locations",
+    title: "Place Physical Security Controls",
     description: "Select the BEST security control for each location.",
     type: "placement",
     placementZones: ["Outside (Parking)", "Reception (Lobby)", "Data Center Door", "Server Console"],
@@ -271,9 +259,8 @@ const setB: PBQQuestion[] = [
       { item: "Access Badge + Biometrics", correctZone: "Data Center Door", zones: [] },
       { item: "Authentication Token + Password", correctZone: "Server Console", zones: [] },
     ],
-    explanation: "Outside areas need fencing and lighting for safety. Reception requires guards and vestibules to manage entry. Data center doors need badge + biometric authentication. Server consoles require multi-factor authentication.",
+    explanation: "Outside areas need fencing and lighting. Reception requires guards and vestibules. Data center doors need badge + biometric authentication. Server consoles require multi-factor authentication.",
   },
-  // 3. Classification - Control Types (Preventive/Detective/etc.)
   {
     id: "pbq-b-class1",
     domain: "General Security Concepts",
@@ -291,9 +278,8 @@ const setB: PBQQuestion[] = [
       { item: "Security camera in parking lot", category: "Deterrent", categories: [] },
       { item: "Restoring from backup after incident", category: "Corrective", categories: [] },
     ],
-    explanation: "Preventive controls stop threats before they occur (firewalls, MFA). Detective controls identify threats that have occurred (IDS, FIM). Corrective controls fix issues after detection (patching, restoring backups). Deterrent controls discourage attacks (banners, cameras).",
+    explanation: "Preventive controls stop threats (firewalls, MFA). Detective controls identify threats (IDS, FIM). Corrective controls fix issues (patching, restoring backups). Deterrent controls discourage attacks (banners, cameras).",
   },
-  // 4. Ordering - Vulnerability Management Lifecycle
   {
     id: "pbq-b-order1",
     domain: "Security Operations",
@@ -310,7 +296,6 @@ const setB: PBQQuestion[] = [
     ],
     explanation: "First discover all assets. Scan for vulnerabilities. Assess risk using CVSS scores. Prioritize based on risk and asset criticality. Deploy patches or mitigations. Validate fixes by rescanning.",
   },
-  // 5. Matching - Wi-Fi Security
   {
     id: "pbq-b-match2",
     domain: "Network Security",
@@ -325,25 +310,23 @@ const setB: PBQQuestion[] = [
       { source: "802.1X", target: "Port-based network access control framework" },
     ],
     matchingTargets: ["192-bit security with 802.1X authentication", "Pre-shared key with AES-CCMP encryption", "Simultaneous Authentication of Equals for personal use", "Deprecated protocol with RC4 stream cipher", "Port-based network access control framework"],
-    explanation: "WPA3-Enterprise provides the strongest security with 192-bit mode. WPA2-PSK uses a shared passphrase with AES. WPA3-SAE replaces PSK with a more secure handshake. WEP is broken and should never be used. 802.1X provides the authentication framework.",
+    explanation: "WPA3-Enterprise provides the strongest security with 192-bit mode. WPA2-PSK uses a shared passphrase with AES. WPA3-SAE replaces PSK with a more secure handshake. WEP is broken. 802.1X provides the authentication framework.",
   },
-  // 6. Firewall - Stateful Rules (Messer Exam A)
   {
     id: "pbq-b-fw1",
     domain: "Firewall & ACL Configuration",
     title: "Configure Stateful Firewall Rules",
     description: "Block HTTP between Web Server and Database Server. Allow HTTPS from Storage to Video Server. Allow SSH from Management to File Server.",
     type: "firewall",
-    firewallScenario: "DMZ: File Server (10.1.1.3), Video Server (10.1.1.7), Web Server (10.1.1.2). Internal: Storage Server (10.2.1.33), Management Server (10.2.1.47), Database Server (10.2.1.20).",
+    firewallScenario: "DMZ: File Server (10.1.1.3), Video Server (10.1.1.7), Web Server (10.1.1.2). Internal: Storage (10.2.1.33), Management (10.2.1.47), Database (10.2.1.20).",
     firewallRules: [
       { ruleId: 1, sourceIP: "10.1.1.2", destIP: "10.2.1.20", port: "80", protocol: "TCP", action: "" },
       { ruleId: 2, sourceIP: "10.2.1.33", destIP: "10.1.1.7", port: "443", protocol: "TCP", action: "" },
       { ruleId: 3, sourceIP: "10.2.1.47", destIP: "10.1.1.3", port: "22", protocol: "TCP", action: "" },
     ],
     correctActions: ["DENY", "ALLOW", "ALLOW"],
-    explanation: "Rule 1 blocks HTTP (port 80) from the Web Server to the Database Server. Rule 2 allows HTTPS (port 443) from Storage to Video Server. Rule 3 allows SSH (port 22) from Management to File Server.",
+    explanation: "Rule 1 blocks HTTP from Web Server to Database. Rule 2 allows HTTPS from Storage to Video Server. Rule 3 allows SSH from Management to File Server.",
   },
-  // 7. Placement - MDM Security Features
   {
     id: "pbq-b-place2",
     domain: "Mobile Device Management",
@@ -359,9 +342,8 @@ const setB: PBQQuestion[] = [
       { item: "Containerization (Work Profile)", correctZone: "Data Protection", zones: [] },
       { item: "GPS Location Tracking", correctZone: "Monitoring", zones: [] },
     ],
-    explanation: "Remote wipe and containerization protect data. Screen lock and app allowlists control the device. Geofencing restricts access by location. GPS tracking enables monitoring and recovery.",
+    explanation: "Remote wipe and containerization protect data. Screen lock and app allowlists control the device. Geofencing restricts access by location. GPS tracking enables monitoring.",
   },
-  // 8. Classification - Log/SIEM Analysis
   {
     id: "pbq-b-class2",
     domain: "Security Operations",
@@ -373,13 +355,12 @@ const setB: PBQQuestion[] = [
       { item: "445 failed password attempts from single IP for root", category: "Brute Force", categories: [] },
       { item: "' OR '1'='1 in web server access log query string", category: "SQL Injection", categories: [] },
       { item: "10,000 SYN packets/sec from 200+ source IPs", category: "DDoS", categories: [] },
-      { item: "User account suddenly added to Domain Admins group", category: "Privilege Escalation", categories: [] },
+      { item: "User account suddenly added to Domain Admins", category: "Privilege Escalation", categories: [] },
       { item: "UNION SELECT in HTTP POST body parameter", category: "SQL Injection", categories: [] },
-      { item: "100 failed SSH logins followed by successful login", category: "Brute Force", categories: [] },
+      { item: "100 failed SSH logins followed by success", category: "Brute Force", categories: [] },
     ],
-    explanation: "Multiple failed login attempts indicate brute force. SQL syntax in web logs indicates injection. Massive traffic from many IPs indicates DDoS. Unexpected group membership changes indicate privilege escalation.",
+    explanation: "Multiple failed login attempts indicate brute force. SQL syntax in logs indicates injection. Massive traffic from many IPs indicates DDoS. Unexpected group membership changes indicate privilege escalation.",
   },
-  // 9. Matching - Authentication Factors
   {
     id: "pbq-b-match3",
     domain: "Identity and Access Management",
@@ -393,14 +374,13 @@ const setB: PBQQuestion[] = [
       { source: "Login only works when connected to VPN", target: "Somewhere you are" },
     ],
     matchingTargets: ["Something you know", "Something you have", "Something you are", "Somewhere you are"],
-    explanation: "Something you have = physical possession (phone, token). Something you know = knowledge factor (PIN, password). Something you are = biometric (fingerprint). Somewhere you are = location factor (VPN, geofencing).",
+    explanation: "Something you have = physical possession (phone, token). Something you know = knowledge factor (PIN). Something you are = biometric (fingerprint). Somewhere you are = location factor.",
   },
-  // 10. Placement - User/Permission Hardening
   {
     id: "pbq-b-place3",
     domain: "Identity and Access Management",
     title: "Apply Least Privilege to User Accounts",
-    description: "Given the user directory, assign the correct access level for each account based on least privilege.",
+    description: "Assign the correct access level for each account based on least privilege.",
     type: "placement",
     placementZones: ["Disable Account", "Read-Only Access", "Standard User", "Administrator"],
     placementItems: [
@@ -408,23 +388,22 @@ const setB: PBQQuestion[] = [
       { item: "Auditor reviewing quarterly reports", correctZone: "Read-Only Access", zones: [] },
       { item: "Help desk technician", correctZone: "Standard User", zones: [] },
       { item: "IT Security Manager", correctZone: "Administrator", zones: [] },
-      { item: "Intern (access to training materials only)", correctZone: "Read-Only Access", zones: [] },
-      { item: "Generic 'admin' account with no assigned owner", correctZone: "Disable Account", zones: [] },
+      { item: "Intern (training materials only)", correctZone: "Read-Only Access", zones: [] },
+      { item: "Generic 'admin' account with no owner", correctZone: "Disable Account", zones: [] },
     ],
-    explanation: "Former contractors and unassigned generic accounts should be disabled immediately. Auditors and interns need read-only access. Help desk gets standard user rights. Only security managers need admin privileges.",
+    explanation: "Former contractors and unassigned generic accounts should be disabled. Auditors and interns need read-only access. Help desk gets standard user rights. Only security managers need admin privileges.",
   },
 ];
 
 /* ========== SET C ========== */
 const setC: PBQQuestion[] = [
-  // 1. Firewall - Email Server
   {
     id: "pbq-c-fw1",
     domain: "Firewall & ACL Configuration",
-    title: "Secure Email Server Firewall Rules",
+    title: "Secure Email Server Rules",
     description: "Configure firewall rules for an email server in the DMZ.",
     type: "firewall",
-    firewallScenario: "The email server (172.16.1.10) must accept SMTP (port 25) and IMAPS (port 993) from the internet. POP3 (port 110) should be denied as it is unencrypted. SSH (port 22) should only come from the admin subnet (10.0.0.0/8). Telnet must be denied.",
+    firewallScenario: "The email server (172.16.1.10) must accept SMTP (25) and IMAPS (993) from the internet. POP3 (110) is unencrypted and should be denied. SSH (22) only from admin subnet (10.0.0.0/8). Telnet (23) must be denied.",
     firewallRules: [
       { ruleId: 1, sourceIP: "Any", destIP: "172.16.1.10", port: "25", protocol: "TCP", action: "" },
       { ruleId: 2, sourceIP: "Any", destIP: "172.16.1.10", port: "993", protocol: "TCP", action: "" },
@@ -433,9 +412,8 @@ const setC: PBQQuestion[] = [
       { ruleId: 5, sourceIP: "Any", destIP: "172.16.1.10", port: "23", protocol: "TCP", action: "" },
     ],
     correctActions: ["ALLOW", "ALLOW", "DENY", "ALLOW", "DENY"],
-    explanation: "SMTP (25) is needed for email delivery. IMAPS (993) provides encrypted mailbox access. POP3 (110) is unencrypted. SSH (22) from admin subnet only. Telnet (23) is always insecure.",
+    explanation: "SMTP (25) is needed for email delivery. IMAPS (993) provides encrypted access. POP3 (110) is unencrypted. SSH from admin subnet only. Telnet is always insecure.",
   },
-  // 2. Matching - Network Protocols
   {
     id: "pbq-c-match1",
     domain: "Network Security",
@@ -452,7 +430,6 @@ const setC: PBQQuestion[] = [
     matchingTargets: ["Centralized authentication for network devices", "Network device monitoring and management", "Centralized log collection", "Encrypted network-layer tunneling", "Encrypted transport-layer communication"],
     explanation: "RADIUS provides AAA for network access. SNMP monitors network devices. Syslog collects logs centrally. IPSec encrypts at the network layer. TLS encrypts at the transport layer.",
   },
-  // 3. Classification - Threat Actors
   {
     id: "pbq-c-class1",
     domain: "Threats & Vulnerabilities",
@@ -464,13 +441,12 @@ const setC: PBQQuestion[] = [
       { item: "APT group targets defense contractors for years", category: "Nation State", categories: [] },
       { item: "Ransomware gang demands Bitcoin payment", category: "Organized Crime", categories: [] },
       { item: "Website defaced with political message", category: "Hacktivist", categories: [] },
-      { item: "Employee copies customer database before quitting", category: "Insider Threat", categories: [] },
+      { item: "Employee copies customer DB before quitting", category: "Insider Threat", categories: [] },
       { item: "State-sponsored espionage on critical infrastructure", category: "Nation State", categories: [] },
       { item: "Credit card skimming ring at retail stores", category: "Organized Crime", categories: [] },
     ],
     explanation: "Nation states conduct APTs and espionage. Organized crime seeks financial gain. Hacktivists deface sites for political causes. Insider threats come from employees with authorized access.",
   },
-  // 4. Matching - Encryption Concepts
   {
     id: "pbq-c-match2",
     domain: "Cryptography",
@@ -485,26 +461,24 @@ const setC: PBQQuestion[] = [
       { source: "PKI", target: "Framework for managing digital certificates" },
     ],
     matchingTargets: ["Third-party holds copy of encryption keys", "Provides authenticity and non-repudiation", "Random data added before hashing passwords", "Hiding data within other media files", "Framework for managing digital certificates"],
-    explanation: "Key escrow stores keys with a trusted third party. Digital signatures use the sender's private key for authenticity. Salting adds randomness to prevent rainbow table attacks. Steganography hides data inside images/audio. PKI manages certificate lifecycle.",
+    explanation: "Key escrow stores keys with a trusted third party. Digital signatures use the sender's private key. Salting adds randomness to prevent rainbow table attacks. Steganography hides data inside media. PKI manages certificate lifecycle.",
   },
-  // 5. Ordering - Wi-Fi/VPN Configuration Steps
   {
     id: "pbq-c-order1",
     domain: "Network Security",
-    title: "Order Secure Wi-Fi Deployment Steps",
-    description: "Arrange the steps for deploying a secure enterprise wireless network in the correct order.",
+    title: "Order Secure Wi-Fi Deployment",
+    description: "Arrange the steps for deploying a secure enterprise wireless network.",
     type: "ordering",
     orderItems: [
       { step: "Perform site survey and plan AP placement", correctPosition: 0 },
-      { step: "Configure SSID and disable SSID broadcast (optional)", correctPosition: 1 },
+      { step: "Configure SSID and disable broadcast (optional)", correctPosition: 1 },
       { step: "Select WPA3-Enterprise with EAP-TLS", correctPosition: 2 },
-      { step: "Configure RADIUS server for 802.1X authentication", correctPosition: 3 },
+      { step: "Configure RADIUS server for 802.1X", correctPosition: 3 },
       { step: "Deploy client certificates to authorized devices", correctPosition: 4 },
       { step: "Test connectivity and validate security controls", correctPosition: 5 },
     ],
-    explanation: "Start with a physical site survey. Configure the SSID. Choose the strongest encryption (WPA3-Enterprise). Set up RADIUS for 802.1X. Deploy certificates for mutual authentication. Finally, test and validate.",
+    explanation: "Start with a site survey. Configure SSID. Choose WPA3-Enterprise. Set up RADIUS for 802.1X. Deploy certificates for mutual authentication. Test and validate.",
   },
-  // 6. Placement - Defense-in-Depth Layers
   {
     id: "pbq-c-place1",
     domain: "Security Architecture",
@@ -520,16 +494,15 @@ const setC: PBQQuestion[] = [
       { item: "Input Validation Library", correctZone: "Application", zones: [] },
       { item: "Network Access Control (NAC)", correctZone: "Network", zones: [] },
     ],
-    explanation: "Perimeter defenses (firewalls, VPN gateways) protect the network boundary. Network layer controls (VLANs, NAC) segment internal traffic. Endpoint protection (AV/EDR) secures devices. Application layer controls (input validation) protect software.",
+    explanation: "Perimeter defenses (firewalls, VPN) protect the boundary. Network layer (VLANs, NAC) segments internal traffic. Endpoint (AV/EDR) secures devices. Application layer (input validation) protects software.",
   },
-  // 7. Firewall - VLAN Segmentation
   {
     id: "pbq-c-fw2",
     domain: "Firewall & ACL Configuration",
     title: "Segment Internal Network Traffic",
-    description: "Configure rules to properly segment traffic between HR, Finance, and Engineering VLANs.",
+    description: "Configure rules to segment traffic between HR, Finance, and Engineering VLANs.",
     type: "firewall",
-    firewallScenario: "HR (VLAN 10: 10.10.0.0/24) needs access to the Finance file server (10.20.0.10) on port 445. Engineering (VLAN 30: 10.30.0.0/24) must not access HR or Finance. All VLANs can access the DNS server (10.0.0.53) on port 53.",
+    firewallScenario: "HR (10.10.0.0/24) needs Finance file server (10.20.0.10) on port 445. Engineering (10.30.0.0/24) must not access HR or Finance. All VLANs can access DNS (10.0.0.53) on port 53. Finance must not have blanket access to HR.",
     firewallRules: [
       { ruleId: 1, sourceIP: "10.10.0.0/24", destIP: "10.20.0.10", port: "445", protocol: "TCP", action: "" },
       { ruleId: 2, sourceIP: "10.30.0.0/24", destIP: "10.10.0.0/24", port: "Any", protocol: "Any", action: "" },
@@ -538,27 +511,25 @@ const setC: PBQQuestion[] = [
       { ruleId: 5, sourceIP: "10.20.0.0/24", destIP: "10.10.0.0/24", port: "Any", protocol: "Any", action: "" },
     ],
     correctActions: ["ALLOW", "DENY", "DENY", "ALLOW", "DENY"],
-    explanation: "HR needs file sharing access to Finance (port 445). Engineering must be isolated from HR and Finance. DNS is shared. Finance should not have blanket access to HR.",
+    explanation: "HR needs file sharing to Finance (445). Engineering must be isolated. DNS is shared. Finance should not have blanket access to HR.",
   },
-  // 8. Classification - Vulnerability Management Priorities
   {
     id: "pbq-c-class2",
     domain: "Security Operations",
     title: "Prioritize Vulnerability Remediation",
-    description: "Given scan results, classify each vulnerability by remediation priority based on CVSS score and asset criticality.",
+    description: "Classify each vulnerability by remediation priority based on CVSS and asset criticality.",
     type: "classification",
-    classificationCategories: ["Critical (Fix Immediately)", "High (Fix Within 24h)", "Medium (Fix Within 7 Days)", "Low (Schedule for Next Cycle)"],
+    classificationCategories: ["Critical (Immediate)", "High (24h)", "Medium (7 Days)", "Low (Next Cycle)"],
     classificationItems: [
-      { item: "CVSS 9.8 RCE on internet-facing web server", category: "Critical (Fix Immediately)", categories: [] },
-      { item: "CVSS 7.5 privilege escalation on internal DB", category: "High (Fix Within 24h)", categories: [] },
-      { item: "CVSS 5.3 info disclosure on dev environment", category: "Low (Schedule for Next Cycle)", categories: [] },
-      { item: "CVSS 8.1 SQLi on customer portal", category: "Critical (Fix Immediately)", categories: [] },
-      { item: "CVSS 6.1 XSS on internal wiki", category: "Medium (Fix Within 7 Days)", categories: [] },
-      { item: "CVSS 4.3 missing security headers on staging", category: "Low (Schedule for Next Cycle)", categories: [] },
+      { item: "CVSS 9.8 RCE on internet-facing web server", category: "Critical (Immediate)", categories: [] },
+      { item: "CVSS 7.5 privilege escalation on internal DB", category: "High (24h)", categories: [] },
+      { item: "CVSS 5.3 info disclosure on dev environment", category: "Low (Next Cycle)", categories: [] },
+      { item: "CVSS 8.1 SQLi on customer portal", category: "Critical (Immediate)", categories: [] },
+      { item: "CVSS 6.1 XSS on internal wiki", category: "Medium (7 Days)", categories: [] },
+      { item: "CVSS 4.3 missing headers on staging", category: "Low (Next Cycle)", categories: [] },
     ],
-    explanation: "Critical CVSS scores on internet-facing assets need immediate fixes. High scores on internal systems need quick remediation. Medium scores on internal tools can wait a week. Low scores on dev/staging can be scheduled.",
+    explanation: "Critical CVSS on internet-facing assets need immediate fixes. High on internal systems need quick remediation. Medium on internal tools can wait a week. Low on dev/staging can be scheduled.",
   },
-  // 9. Matching - Ports to Services
   {
     id: "pbq-c-match3",
     domain: "Network Security",
@@ -573,9 +544,8 @@ const setC: PBQQuestion[] = [
       { source: "Port 25", target: "SMTP" },
     ],
     matchingTargets: ["SSH", "DNS", "HTTPS", "RDP", "SMTP"],
-    explanation: "SSH uses port 22 for secure remote access. DNS uses port 53 for name resolution. HTTPS uses port 443 for encrypted web traffic. RDP uses port 3389 for Windows remote desktop. SMTP uses port 25 for sending email.",
+    explanation: "SSH=22, DNS=53, HTTPS=443, RDP=3389, SMTP=25.",
   },
-  // 10. Placement - Cloud Security Responsibility
   {
     id: "pbq-c-place2",
     domain: "Cloud Security",
@@ -591,7 +561,517 @@ const setC: PBQQuestion[] = [
       { item: "Identity and access management", correctZone: "Shared", zones: [] },
       { item: "Data encryption configuration", correctZone: "Customer", zones: [] },
     ],
-    explanation: "In IaaS, the provider secures the physical infrastructure and network. The customer is responsible for OS patches, app firewalls, and data encryption. Identity management is shared between both parties.",
+    explanation: "Provider secures physical infrastructure and network. Customer manages OS patches, app firewalls, and data encryption. Identity management is shared.",
+  },
+];
+
+/* ========== SET D ========== */
+const setD: PBQQuestion[] = [
+  {
+    id: "pbq-d-fw1",
+    domain: "Firewall & ACL Configuration",
+    title: "Protect DNS/DHCP Infrastructure",
+    description: "Configure firewall rules for the internal DNS and DHCP servers.",
+    type: "firewall",
+    firewallScenario: "DNS server (10.0.5.53) should answer queries (53/UDP) from internal hosts (192.168.0.0/16) only. DHCP (67-68/UDP) from internal only. Zone transfer (53/TCP) between primary and secondary DNS (10.0.5.54) only. Deny Telnet and FTP from all sources.",
+    firewallRules: [
+      { ruleId: 1, sourceIP: "192.168.0.0/16", destIP: "10.0.5.53", port: "53", protocol: "UDP", action: "" },
+      { ruleId: 2, sourceIP: "192.168.0.0/16", destIP: "10.0.5.53", port: "67-68", protocol: "UDP", action: "" },
+      { ruleId: 3, sourceIP: "10.0.5.54", destIP: "10.0.5.53", port: "53", protocol: "TCP", action: "" },
+      { ruleId: 4, sourceIP: "Any", destIP: "10.0.5.53", port: "23", protocol: "TCP", action: "" },
+      { ruleId: 5, sourceIP: "Any", destIP: "10.0.5.53", port: "21", protocol: "TCP", action: "" },
+    ],
+    correctActions: ["ALLOW", "ALLOW", "ALLOW", "DENY", "DENY"],
+    explanation: "DNS queries from internal only. DHCP from internal only. Zone transfers between authorized DNS servers via TCP 53. Telnet and FTP are insecure protocols that should always be denied.",
+  },
+  {
+    id: "pbq-d-match1",
+    domain: "General Security Concepts",
+    title: "Match Security Frameworks",
+    description: "Match each security framework to its correct description.",
+    type: "matching",
+    matchingItems: [
+      { source: "NIST CSF", target: "Risk-based cybersecurity framework (Identify, Protect, Detect, Respond, Recover)" },
+      { source: "ISO 27001", target: "International standard for information security management systems" },
+      { source: "CIS Controls", target: "Prioritized set of security best practices" },
+      { source: "COBIT", target: "IT governance framework for enterprise management" },
+      { source: "SOC 2", target: "Service organization audit based on trust principles" },
+    ],
+    matchingTargets: ["Risk-based cybersecurity framework (Identify, Protect, Detect, Respond, Recover)", "International standard for information security management systems", "Prioritized set of security best practices", "IT governance framework for enterprise management", "Service organization audit based on trust principles"],
+    explanation: "NIST CSF provides a risk-based approach with five functions. ISO 27001 is the international ISMS standard. CIS Controls are prioritized security benchmarks. COBIT is an IT governance framework. SOC 2 audits service organizations on trust criteria.",
+  },
+  {
+    id: "pbq-d-class1",
+    domain: "Cryptography",
+    title: "Classify Data States and Protections",
+    description: "Classify each protection method by the data state it protects.",
+    type: "classification",
+    classificationCategories: ["Data at Rest", "Data in Transit", "Data in Use", "Data in Processing"],
+    classificationItems: [
+      { item: "Full-disk encryption (BitLocker/LUKS)", category: "Data at Rest", categories: [] },
+      { item: "TLS certificate on web server", category: "Data in Transit", categories: [] },
+      { item: "Secure enclave for computation", category: "Data in Use", categories: [] },
+      { item: "ETL pipeline data transformation", category: "Data in Processing", categories: [] },
+      { item: "VPN tunnel encryption", category: "Data in Transit", categories: [] },
+      { item: "Database column-level encryption", category: "Data at Rest", categories: [] },
+    ],
+    explanation: "Data at rest is stored data (disk encryption, database encryption). Data in transit is moving data (TLS, VPN). Data in use is actively being accessed (secure enclaves). Data in processing is being transformed (ETL pipelines).",
+  },
+  {
+    id: "pbq-d-order1",
+    domain: "General Security Concepts",
+    title: "Order Change Management Process",
+    description: "Arrange the change management steps in the correct order.",
+    type: "ordering",
+    orderItems: [
+      { step: "Submit change request with business justification", correctPosition: 0 },
+      { step: "Perform impact assessment and risk analysis", correctPosition: 1 },
+      { step: "Obtain approval from Change Advisory Board (CAB)", correctPosition: 2 },
+      { step: "Test changes in staging environment", correctPosition: 3 },
+      { step: "Implement change in production during maintenance window", correctPosition: 4 },
+      { step: "Conduct post-implementation review", correctPosition: 5 },
+    ],
+    explanation: "Changes must be requested, assessed for risk, approved by CAB, tested in staging, implemented during a maintenance window, and reviewed for success or rollback needs.",
+  },
+  {
+    id: "pbq-d-place1",
+    domain: "Security Architecture",
+    title: "Map Zero Trust Architecture Components",
+    description: "Drag each component to the correct zero trust pillar.",
+    type: "placement",
+    placementZones: ["Identity Verification", "Device Trust", "Micro-segmentation", "Continuous Monitoring"],
+    placementItems: [
+      { item: "MFA at every access point", correctZone: "Identity Verification", zones: [] },
+      { item: "Device health attestation", correctZone: "Device Trust", zones: [] },
+      { item: "Software-defined perimeters", correctZone: "Micro-segmentation", zones: [] },
+      { item: "UEBA analytics engine", correctZone: "Continuous Monitoring", zones: [] },
+      { item: "Certificate-based authentication", correctZone: "Identity Verification", zones: [] },
+      { item: "Network flow analysis", correctZone: "Continuous Monitoring", zones: [] },
+    ],
+    explanation: "Zero trust requires continuous identity verification (MFA, certs), device trust validation, network micro-segmentation (SDP), and continuous monitoring (UEBA, flow analysis).",
+  },
+  {
+    id: "pbq-d-match2",
+    domain: "Network Security",
+    title: "Match Wireless Attack Types",
+    description: "Match each wireless attack to its correct description.",
+    type: "matching",
+    matchingItems: [
+      { source: "Evil Twin", target: "Rogue AP mimicking legitimate SSID" },
+      { source: "Deauthentication", target: "Forcing clients to disconnect from AP" },
+      { source: "War Driving", target: "Searching for Wi-Fi networks from a vehicle" },
+      { source: "Bluesnarfing", target: "Unauthorized data access via Bluetooth" },
+      { source: "KRACK", target: "Key reinstallation attack on WPA2 handshake" },
+    ],
+    matchingTargets: ["Rogue AP mimicking legitimate SSID", "Forcing clients to disconnect from AP", "Searching for Wi-Fi networks from a vehicle", "Unauthorized data access via Bluetooth", "Key reinstallation attack on WPA2 handshake"],
+    explanation: "Evil twin creates a fake AP. Deauthentication floods disconnect frames. War driving searches for networks. Bluesnarfing steals data via Bluetooth. KRACK exploits the WPA2 four-way handshake.",
+  },
+  {
+    id: "pbq-d-class2",
+    domain: "Threats & Vulnerabilities",
+    title: "Classify Social Engineering Techniques",
+    description: "Classify each scenario into the correct social engineering category.",
+    type: "classification",
+    classificationCategories: ["Phishing", "Pretexting", "Baiting", "Tailgating"],
+    classificationItems: [
+      { item: "Email with fake invoice link", category: "Phishing", categories: [] },
+      { item: "Caller claims to be IT support needing credentials", category: "Pretexting", categories: [] },
+      { item: "USB drive left in parking lot", category: "Baiting", categories: [] },
+      { item: "Following employee through secure door", category: "Tailgating", categories: [] },
+      { item: "SMS with urgent bank alert", category: "Phishing", categories: [] },
+      { item: "Free software download containing malware", category: "Baiting", categories: [] },
+    ],
+    explanation: "Phishing uses deceptive messages (email, SMS). Pretexting creates a fabricated scenario. Baiting lures victims with enticing items. Tailgating follows authorized people through secure entries.",
+  },
+  {
+    id: "pbq-d-fw2",
+    domain: "Network Security",
+    title: "Segment IoT Network Traffic",
+    description: "Configure firewall rules for an IoT VLAN to restrict device communication.",
+    type: "firewall",
+    firewallScenario: "IoT VLAN (10.50.0.0/24) should reach cloud gateway (10.0.1.100) on MQTT (1883/TCP). IoT must NOT access corporate LAN (10.10.0.0/16). Management station (10.10.1.50) can SSH (22) to IoT. IoT-to-IoT communication must be denied. Allow NTP (123/UDP) to NTP server (10.0.0.123).",
+    firewallRules: [
+      { ruleId: 1, sourceIP: "10.50.0.0/24", destIP: "10.0.1.100", port: "1883", protocol: "TCP", action: "" },
+      { ruleId: 2, sourceIP: "10.50.0.0/24", destIP: "10.10.0.0/16", port: "Any", protocol: "Any", action: "" },
+      { ruleId: 3, sourceIP: "10.10.1.50", destIP: "10.50.0.0/24", port: "22", protocol: "TCP", action: "" },
+      { ruleId: 4, sourceIP: "10.50.0.0/24", destIP: "10.50.0.0/24", port: "Any", protocol: "Any", action: "" },
+      { ruleId: 5, sourceIP: "10.50.0.0/24", destIP: "10.0.0.123", port: "123", protocol: "UDP", action: "" },
+    ],
+    correctActions: ["ALLOW", "DENY", "ALLOW", "DENY", "ALLOW"],
+    explanation: "IoT devices need MQTT to cloud gateway. IoT must be isolated from corporate LAN. Management can SSH for maintenance. IoT-to-IoT blocked to prevent lateral movement. NTP required for time synchronization.",
+  },
+  {
+    id: "pbq-d-place2",
+    domain: "Cryptography",
+    title: "Map PKI Components",
+    description: "Drag each PKI component to its correct role.",
+    type: "placement",
+    placementZones: ["Certificate Authority", "Registration Authority", "Certificate Store", "Revocation Service"],
+    placementItems: [
+      { item: "Root CA (offline)", correctZone: "Certificate Authority", zones: [] },
+      { item: "Validates identity of cert requestors", correctZone: "Registration Authority", zones: [] },
+      { item: "LDAP directory of issued certificates", correctZone: "Certificate Store", zones: [] },
+      { item: "OCSP responder", correctZone: "Revocation Service", zones: [] },
+      { item: "Intermediate/Issuing CA", correctZone: "Certificate Authority", zones: [] },
+      { item: "CRL distribution point", correctZone: "Revocation Service", zones: [] },
+    ],
+    explanation: "Root and intermediate CAs issue certificates. Registration authorities validate identities before issuance. Certificate stores (LDAP) hold issued certs. OCSP and CRL provide revocation status.",
+  },
+  {
+    id: "pbq-d-order2",
+    domain: "Incident Response",
+    title: "Order Digital Forensics Process",
+    description: "Arrange the digital forensics steps in the correct order.",
+    type: "ordering",
+    orderItems: [
+      { step: "Identify and secure the scene", correctPosition: 0 },
+      { step: "Document all evidence and environment", correctPosition: 1 },
+      { step: "Collect and acquire forensic images", correctPosition: 2 },
+      { step: "Preserve chain of custody documentation", correctPosition: 3 },
+      { step: "Analyze evidence using forensic tools", correctPosition: 4 },
+      { step: "Report findings and conclusions", correctPosition: 5 },
+    ],
+    explanation: "Forensics follows: secure the scene, document everything, collect evidence (forensic images), maintain chain of custody, analyze with tools, and report findings.",
+  },
+];
+
+/* ========== SET E ========== */
+const setE: PBQQuestion[] = [
+  {
+    id: "pbq-e-fw1",
+    domain: "Cloud Security",
+    title: "Configure Container Security Groups",
+    description: "Set up security groups for a containerized microservice architecture.",
+    type: "firewall",
+    firewallScenario: "API gateway (172.17.0.10) accepts traffic on 8080/TCP from load balancer (10.0.0.5) only. Database container (172.17.0.20:5432) must not be accessible from internet. Inter-service traffic on 8443/TCP allowed. SSH to containers from internet denied. Monitoring (172.17.0.30:9090) from management (10.0.0.100) only.",
+    firewallRules: [
+      { ruleId: 1, sourceIP: "10.0.0.5", destIP: "172.17.0.10", port: "8080", protocol: "TCP", action: "" },
+      { ruleId: 2, sourceIP: "Any", destIP: "172.17.0.20", port: "5432", protocol: "TCP", action: "" },
+      { ruleId: 3, sourceIP: "172.17.0.0/16", destIP: "172.17.0.0/16", port: "8443", protocol: "TCP", action: "" },
+      { ruleId: 4, sourceIP: "Any", destIP: "172.17.0.0/16", port: "22", protocol: "TCP", action: "" },
+      { ruleId: 5, sourceIP: "10.0.0.100", destIP: "172.17.0.30", port: "9090", protocol: "TCP", action: "" },
+    ],
+    correctActions: ["ALLOW", "DENY", "ALLOW", "DENY", "ALLOW"],
+    explanation: "API gateway only from load balancer. Database never from internet. Inter-service communication allowed on secure port. No SSH from internet to containers. Monitoring from management only.",
+  },
+  {
+    id: "pbq-e-match1",
+    domain: "Identity and Access Management",
+    title: "Match Authentication Protocols",
+    description: "Match each authentication protocol to its correct description.",
+    type: "matching",
+    matchingItems: [
+      { source: "SAML", target: "XML-based SSO for web browser applications" },
+      { source: "OAuth 2.0", target: "Authorization framework for delegated API access" },
+      { source: "OpenID Connect", target: "Identity layer built on top of OAuth 2.0" },
+      { source: "Kerberos", target: "Ticket-based authentication for Windows domains" },
+      { source: "LDAP", target: "Directory service protocol for user lookups" },
+    ],
+    matchingTargets: ["XML-based SSO for web browser applications", "Authorization framework for delegated API access", "Identity layer built on top of OAuth 2.0", "Ticket-based authentication for Windows domains", "Directory service protocol for user lookups"],
+    explanation: "SAML provides SSO via XML assertions. OAuth 2.0 delegates authorization. OpenID Connect adds identity to OAuth. Kerberos uses tickets in AD environments. LDAP queries directory services.",
+  },
+  {
+    id: "pbq-e-class1",
+    domain: "Governance & Compliance",
+    title: "Classify Risk Management Terms",
+    description: "Classify each item into the correct risk management category.",
+    type: "classification",
+    classificationCategories: ["Risk Response", "Risk Assessment", "Risk Indicator", "Risk Metric"],
+    classificationItems: [
+      { item: "Accept the residual risk with documentation", category: "Risk Response", categories: [] },
+      { item: "Annual Loss Expectancy (ALE) calculation", category: "Risk Assessment", categories: [] },
+      { item: "Unusual login patterns from foreign IPs", category: "Risk Indicator", categories: [] },
+      { item: "Mean Time to Recover (MTTR) of 4 hours", category: "Risk Metric", categories: [] },
+      { item: "Transfer risk via cyber insurance policy", category: "Risk Response", categories: [] },
+      { item: "Threat likelihood × impact = risk score", category: "Risk Assessment", categories: [] },
+    ],
+    explanation: "Risk responses include accept, transfer, mitigate, avoid. Assessment calculates risk (ALE, likelihood × impact). Indicators signal potential issues. Metrics measure security performance.",
+  },
+  {
+    id: "pbq-e-order1",
+    domain: "Application Security",
+    title: "Order Secure SDLC Phases",
+    description: "Arrange the secure software development lifecycle phases in order.",
+    type: "ordering",
+    orderItems: [
+      { step: "Requirements gathering and security planning", correctPosition: 0 },
+      { step: "Threat modeling and secure design review", correctPosition: 1 },
+      { step: "Secure coding practices implementation", correctPosition: 2 },
+      { step: "Static and dynamic analysis testing (SAST/DAST)", correctPosition: 3 },
+      { step: "Security regression and penetration testing", correctPosition: 4 },
+      { step: "Deployment, monitoring, and patch management", correctPosition: 5 },
+    ],
+    explanation: "Start with security requirements. Model threats during design. Write secure code. Test with SAST/DAST. Run pen tests. Deploy with monitoring and patching.",
+  },
+  {
+    id: "pbq-e-place1",
+    domain: "Network Security",
+    title: "Assign Resources to Network Zones",
+    description: "Drag each resource to the correct network security zone.",
+    type: "placement",
+    placementZones: ["Internet (Public)", "DMZ", "Internal Network", "Restricted Zone"],
+    placementItems: [
+      { item: "Public-facing web server", correctZone: "DMZ", zones: [] },
+      { item: "Employee workstations", correctZone: "Internal Network", zones: [] },
+      { item: "Database with PII records", correctZone: "Restricted Zone", zones: [] },
+      { item: "CDN edge node", correctZone: "Internet (Public)", zones: [] },
+      { item: "Email relay server", correctZone: "DMZ", zones: [] },
+      { item: "Active Directory domain controller", correctZone: "Restricted Zone", zones: [] },
+    ],
+    explanation: "DMZ hosts public-facing services. Internal network has employee devices. Restricted zone protects sensitive data and critical infrastructure. CDN nodes are internet-facing.",
+  },
+  {
+    id: "pbq-e-match2",
+    domain: "Governance & Compliance",
+    title: "Match Compliance Frameworks to Scope",
+    description: "Match each compliance framework to what it regulates.",
+    type: "matching",
+    matchingItems: [
+      { source: "PCI-DSS", target: "Payment card industry data security" },
+      { source: "HIPAA", target: "US healthcare data protection" },
+      { source: "GDPR", target: "European personal data regulation" },
+      { source: "SOX", target: "US financial reporting and accounting controls" },
+      { source: "FERPA", target: "US student education records privacy" },
+    ],
+    matchingTargets: ["Payment card industry data security", "US healthcare data protection", "European personal data regulation", "US financial reporting and accounting controls", "US student education records privacy"],
+    explanation: "PCI-DSS protects cardholder data. HIPAA protects health information. GDPR protects EU personal data. SOX ensures financial reporting integrity. FERPA protects student records.",
+  },
+  {
+    id: "pbq-e-class2",
+    domain: "Identity and Access Management",
+    title: "Classify Access Control Models",
+    description: "Classify each scenario into the correct access control model.",
+    type: "classification",
+    classificationCategories: ["DAC", "MAC", "RBAC", "ABAC"],
+    classificationItems: [
+      { item: "File owner sets read/write permissions", category: "DAC", categories: [] },
+      { item: "Military classification labels (Top Secret)", category: "MAC", categories: [] },
+      { item: "Permissions based on job title/role", category: "RBAC", categories: [] },
+      { item: "Access evaluated by time, location, and clearance", category: "ABAC", categories: [] },
+      { item: "Linux file permission bits (chmod 755)", category: "DAC", categories: [] },
+      { item: "Policy engine evaluates multiple attributes", category: "ABAC", categories: [] },
+    ],
+    explanation: "DAC lets owners control access. MAC uses mandatory labels. RBAC assigns permissions by role. ABAC evaluates multiple attributes (time, location, clearance) dynamically.",
+  },
+  {
+    id: "pbq-e-fw2",
+    domain: "Cloud Security",
+    title: "Configure Cloud Security Groups",
+    description: "Set up security group rules for a cloud web application stack.",
+    type: "firewall",
+    firewallScenario: "Web tier: Allow HTTP/HTTPS from 0.0.0.0/0. Deny SSH from 0.0.0.0/0. Allow SSH only from bastion host (10.0.1.5/32). Deny MySQL from any. Allow health checks from load balancer (10.0.2.0/24).",
+    firewallRules: [
+      { ruleId: 1, sourceIP: "0.0.0.0/0", destIP: "Web-SG", port: "80,443", protocol: "TCP", action: "" },
+      { ruleId: 2, sourceIP: "0.0.0.0/0", destIP: "Web-SG", port: "22", protocol: "TCP", action: "" },
+      { ruleId: 3, sourceIP: "10.0.1.5/32", destIP: "Web-SG", port: "22", protocol: "TCP", action: "" },
+      { ruleId: 4, sourceIP: "Any", destIP: "Web-SG", port: "3306", protocol: "TCP", action: "" },
+      { ruleId: 5, sourceIP: "10.0.2.0/24", destIP: "Web-SG", port: "8080", protocol: "TCP", action: "" },
+    ],
+    correctActions: ["ALLOW", "DENY", "ALLOW", "DENY", "ALLOW"],
+    explanation: "Web traffic (80/443) from anywhere. SSH blocked from internet but allowed from bastion. MySQL never exposed to web tier. Health checks from load balancer subnet.",
+  },
+  {
+    id: "pbq-e-place2",
+    domain: "Security Operations",
+    title: "Map Backup Strategies to Frequency",
+    description: "Drag each backup activity to its correct frequency.",
+    type: "placement",
+    placementZones: ["Daily", "Weekly", "Monthly", "Annual"],
+    placementItems: [
+      { item: "Incremental backup of changed files", correctZone: "Daily", zones: [] },
+      { item: "Full backup of all systems", correctZone: "Weekly", zones: [] },
+      { item: "Offsite tape rotation", correctZone: "Monthly", zones: [] },
+      { item: "Full disaster recovery test", correctZone: "Annual", zones: [] },
+      { item: "Database transaction log backup", correctZone: "Daily", zones: [] },
+      { item: "Complete bare-metal system image", correctZone: "Monthly", zones: [] },
+    ],
+    explanation: "Incremental and transaction log backups run daily. Full backups weekly. Offsite rotation and system images monthly. DR tests annually to validate recovery procedures.",
+  },
+  {
+    id: "pbq-e-order2",
+    domain: "Security Operations",
+    title: "Order Business Continuity Planning Steps",
+    description: "Arrange the BCP steps in the correct order.",
+    type: "ordering",
+    orderItems: [
+      { step: "Conduct business impact analysis (BIA)", correctPosition: 0 },
+      { step: "Identify critical business functions", correctPosition: 1 },
+      { step: "Determine RTO and RPO objectives", correctPosition: 2 },
+      { step: "Develop continuity strategies", correctPosition: 3 },
+      { step: "Create and document the BC plan", correctPosition: 4 },
+      { step: "Test, exercise, and maintain the plan", correctPosition: 5 },
+    ],
+    explanation: "BIA identifies impact of disruptions. Critical functions are prioritized. RTO/RPO set recovery targets. Strategies are developed. Plan is documented. Regular testing ensures readiness.",
+  },
+];
+
+/* ========== SET F ========== */
+const setF: PBQQuestion[] = [
+  {
+    id: "pbq-f-fw1",
+    domain: "Firewall & ACL Configuration",
+    title: "Secure E-Commerce Platform",
+    description: "Configure firewall rules for an e-commerce web application.",
+    type: "firewall",
+    firewallScenario: "E-commerce server (10.0.2.100): Allow HTTPS (443) from any. HTTP (80) should redirect (ALLOW for redirect). Payment gateway (10.0.3.50) on 8443/TCP from e-commerce only. Direct DB access (10.0.4.20:3306) from web tier denied. SNMP from internet denied.",
+    firewallRules: [
+      { ruleId: 1, sourceIP: "Any", destIP: "10.0.2.100", port: "443", protocol: "TCP", action: "" },
+      { ruleId: 2, sourceIP: "Any", destIP: "10.0.2.100", port: "80", protocol: "TCP", action: "" },
+      { ruleId: 3, sourceIP: "10.0.2.100", destIP: "10.0.3.50", port: "8443", protocol: "TCP", action: "" },
+      { ruleId: 4, sourceIP: "10.0.2.100", destIP: "10.0.4.20", port: "3306", protocol: "TCP", action: "" },
+      { ruleId: 5, sourceIP: "Any", destIP: "10.0.2.100", port: "161", protocol: "UDP", action: "" },
+    ],
+    correctActions: ["ALLOW", "ALLOW", "ALLOW", "DENY", "DENY"],
+    explanation: "HTTPS required for e-commerce. HTTP allowed for redirect to HTTPS. Payment gateway accessible from e-commerce server only. Direct DB access from web tier is a security risk. SNMP from internet exposes management.",
+  },
+  {
+    id: "pbq-f-match1",
+    domain: "Cryptography",
+    title: "Match Encryption Modes & Applications",
+    description: "Match each encryption mode to its correct description.",
+    type: "matching",
+    matchingItems: [
+      { source: "AES-GCM", target: "Authenticated encryption with associated data" },
+      { source: "AES-CBC", target: "Block cipher requiring initialization vector" },
+      { source: "ChaCha20-Poly1305", target: "Stream cipher used in TLS 1.3 and WireGuard" },
+      { source: "RSA-OAEP", target: "Asymmetric encryption with optimal padding" },
+      { source: "AES-XTS", target: "Encryption mode designed for full disk encryption" },
+    ],
+    matchingTargets: ["Authenticated encryption with associated data", "Block cipher requiring initialization vector", "Stream cipher used in TLS 1.3 and WireGuard", "Asymmetric encryption with optimal padding", "Encryption mode designed for full disk encryption"],
+    explanation: "AES-GCM provides authenticated encryption. AES-CBC needs an IV. ChaCha20 is used in TLS 1.3. RSA-OAEP is secure asymmetric encryption. AES-XTS is the standard for disk encryption.",
+  },
+  {
+    id: "pbq-f-class1",
+    domain: "Incident Response",
+    title: "Classify Incident Severity Levels",
+    description: "Classify each incident into the correct severity level.",
+    type: "classification",
+    classificationCategories: ["Critical (P1)", "High (P2)", "Medium (P3)", "Low (P4)"],
+    classificationItems: [
+      { item: "Ransomware encrypting production servers", category: "Critical (P1)", categories: [] },
+      { item: "Phishing email reported by single user", category: "Low (P4)", categories: [] },
+      { item: "Unauthorized admin account created", category: "Critical (P1)", categories: [] },
+      { item: "Medium CVSS vulnerability found in scan", category: "Medium (P3)", categories: [] },
+      { item: "Failed login alerts from service account", category: "High (P2)", categories: [] },
+      { item: "Outdated SSL cert on internal-only site", category: "Medium (P3)", categories: [] },
+    ],
+    explanation: "Ransomware and unauthorized admin accounts are critical. Service account compromise attempts are high priority. Medium CVSS and expired internal certs are medium. Single phishing reports are low.",
+  },
+  {
+    id: "pbq-f-order1",
+    domain: "Cryptography",
+    title: "Order PKI Certificate Lifecycle",
+    description: "Arrange the PKI certificate lifecycle steps in order.",
+    type: "ordering",
+    orderItems: [
+      { step: "Generate asymmetric key pair", correctPosition: 0 },
+      { step: "Submit Certificate Signing Request (CSR)", correctPosition: 1 },
+      { step: "Certificate Authority validates identity", correctPosition: 2 },
+      { step: "CA issues signed digital certificate", correctPosition: 3 },
+      { step: "Deploy certificate to server/service", correctPosition: 4 },
+      { step: "Monitor expiration and renew or revoke", correctPosition: 5 },
+    ],
+    explanation: "Generate keys first. Submit CSR to CA. CA validates identity. CA signs and issues certificate. Deploy to the endpoint. Monitor and renew before expiration or revoke if compromised.",
+  },
+  {
+    id: "pbq-f-place1",
+    domain: "Security Operations",
+    title: "Map SIEM Components",
+    description: "Drag each SIEM component to its correct functional area.",
+    type: "placement",
+    placementZones: ["Data Collection", "Normalization", "Correlation", "Response"],
+    placementItems: [
+      { item: "Log forwarders and agents", correctZone: "Data Collection", zones: [] },
+      { item: "Parsing different log formats into common schema", correctZone: "Normalization", zones: [] },
+      { item: "Rule-based alert generation", correctZone: "Correlation", zones: [] },
+      { item: "Automated SOAR ticket creation", correctZone: "Response", zones: [] },
+      { item: "NetFlow and packet capture collection", correctZone: "Data Collection", zones: [] },
+      { item: "Threat intelligence feed integration", correctZone: "Correlation", zones: [] },
+    ],
+    explanation: "Data collection gathers logs and network data. Normalization standardizes formats. Correlation matches patterns and generates alerts. Response automates remediation actions.",
+  },
+  {
+    id: "pbq-f-match2",
+    domain: "Threats & Vulnerabilities",
+    title: "Match Endpoint Security Tools",
+    description: "Match each endpoint security tool to its primary function.",
+    type: "matching",
+    matchingItems: [
+      { source: "EDR", target: "Real-time endpoint threat detection and response" },
+      { source: "DLP", target: "Prevents unauthorized data exfiltration" },
+      { source: "HIPS", target: "Host-based intrusion prevention system" },
+      { source: "Application Allowlisting", target: "Only approved executables can run" },
+      { source: "FIM", target: "Detects unauthorized changes to critical files" },
+    ],
+    matchingTargets: ["Real-time endpoint threat detection and response", "Prevents unauthorized data exfiltration", "Host-based intrusion prevention system", "Only approved executables can run", "Detects unauthorized changes to critical files"],
+    explanation: "EDR monitors endpoints in real-time. DLP prevents data leaks. HIPS blocks malicious activity on hosts. Application allowlisting restricts executables. FIM monitors file integrity.",
+  },
+  {
+    id: "pbq-f-class2",
+    domain: "Cloud Security",
+    title: "Classify Cloud Service Models",
+    description: "Classify each cloud offering into the correct service model.",
+    type: "classification",
+    classificationCategories: ["IaaS", "PaaS", "SaaS", "FaaS"],
+    classificationItems: [
+      { item: "AWS EC2 virtual machines", category: "IaaS", categories: [] },
+      { item: "Google App Engine", category: "PaaS", categories: [] },
+      { item: "Microsoft 365 (Office suite)", category: "SaaS", categories: [] },
+      { item: "AWS Lambda serverless functions", category: "FaaS", categories: [] },
+      { item: "Azure Virtual Machines", category: "IaaS", categories: [] },
+      { item: "Salesforce CRM", category: "SaaS", categories: [] },
+    ],
+    explanation: "IaaS provides virtual infrastructure (EC2, Azure VMs). PaaS provides development platforms (App Engine). SaaS delivers complete applications (M365, Salesforce). FaaS runs event-driven functions (Lambda).",
+  },
+  {
+    id: "pbq-f-fw2",
+    domain: "Firewall & ACL Configuration",
+    title: "Secure Healthcare Network (HIPAA)",
+    description: "Configure firewall rules for a healthcare network with HIPAA compliance requirements.",
+    type: "firewall",
+    firewallScenario: "EHR server (172.16.10.50): Allow HTTPS (443) from clinical workstations (172.16.20.0/24). Deny HTTP (80) from all. Allow HL7 FHIR API (8443) from integration engine (172.16.10.100). Deny RDP from internet. Allow backup server (172.16.30.10) on port 445.",
+    firewallRules: [
+      { ruleId: 1, sourceIP: "172.16.20.0/24", destIP: "172.16.10.50", port: "443", protocol: "TCP", action: "" },
+      { ruleId: 2, sourceIP: "Any", destIP: "172.16.10.50", port: "80", protocol: "TCP", action: "" },
+      { ruleId: 3, sourceIP: "172.16.10.100", destIP: "172.16.10.50", port: "8443", protocol: "TCP", action: "" },
+      { ruleId: 4, sourceIP: "Any", destIP: "172.16.10.50", port: "3389", protocol: "TCP", action: "" },
+      { ruleId: 5, sourceIP: "172.16.30.10", destIP: "172.16.10.50", port: "445", protocol: "TCP", action: "" },
+    ],
+    correctActions: ["ALLOW", "DENY", "ALLOW", "DENY", "ALLOW"],
+    explanation: "HTTPS from clinical workstations for secure EHR access. HTTP denied (HIPAA requires encryption). HL7 FHIR API from integration engine. RDP from internet is a major risk. Backup server needs file share access.",
+  },
+  {
+    id: "pbq-f-place2",
+    domain: "Security Architecture",
+    title: "Map Physical Security by Function",
+    description: "Drag each physical security control to its correct function.",
+    type: "placement",
+    placementZones: ["Deterrent", "Preventive", "Detective", "Recovery"],
+    placementItems: [
+      { item: "Warning signs and banners", correctZone: "Deterrent", zones: [] },
+      { item: "Mantrap / access control vestibule", correctZone: "Preventive", zones: [] },
+      { item: "Motion sensors", correctZone: "Detective", zones: [] },
+      { item: "Fire suppression system", correctZone: "Recovery", zones: [] },
+      { item: "Security lighting", correctZone: "Deterrent", zones: [] },
+      { item: "CCTV surveillance cameras", correctZone: "Detective", zones: [] },
+    ],
+    explanation: "Warning signs and lighting deter attackers. Mantraps prevent unauthorized entry. Motion sensors and CCTV detect intrusions. Fire suppression aids recovery from physical damage.",
+  },
+  {
+    id: "pbq-f-order2",
+    domain: "Governance & Compliance",
+    title: "Order Risk Assessment Process",
+    description: "Arrange the risk assessment steps in the correct order.",
+    type: "ordering",
+    orderItems: [
+      { step: "Identify assets and determine their value", correctPosition: 0 },
+      { step: "Identify threats and vulnerabilities", correctPosition: 1 },
+      { step: "Assess likelihood and potential impact", correctPosition: 2 },
+      { step: "Calculate risk score (risk = likelihood × impact)", correctPosition: 3 },
+      { step: "Select and implement appropriate controls", correctPosition: 4 },
+      { step: "Monitor effectiveness and review periodically", correctPosition: 5 },
+    ],
+    explanation: "Identify assets first. Determine threats and vulnerabilities. Assess likelihood and impact. Calculate risk. Implement controls. Monitor and review regularly.",
   },
 ];
 
@@ -599,11 +1079,13 @@ export const pbqSets: PBQSet[] = [
   { id: 'A', label: 'Set A', questions: setA },
   { id: 'B', label: 'Set B', questions: setB },
   { id: 'C', label: 'Set C', questions: setC },
+  { id: 'D', label: 'Set D', questions: setD },
+  { id: 'E', label: 'Set E', questions: setE },
+  { id: 'F', label: 'Set F', questions: setF },
 ];
 
 export const pbqQuestions = setA;
 
-// Get all unique domains across all sets
 export function getAllPBQDomains(): string[] {
   const domains = new Set<string>();
   pbqSets.forEach(set => set.questions.forEach(q => domains.add(q.domain)));

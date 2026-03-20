@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { ExamHeader } from '@/components/ExamHeader';
 import { PBQSection } from '@/components/PBQSection';
 import { MCQSection } from '@/components/MCQSection';
-import { ResultsScreen } from '@/components/ResultsScreen';
 import { pbqSets, PBQQuestion } from '@/data/pbq';
 import { mcqSets, MCQItem } from '@/data/mcq';
 import {
@@ -28,9 +27,8 @@ const Index = () => {
     saveState(state);
   }, [state]);
 
-  // Filter questions by selected domains
-  const allPBQ: PBQQuestion[] = pbqSets.find(s => s.id === state.currentSet)?.questions || pbqSets[0].questions;
-  const allMCQ: MCQItem[] = mcqSets.find(s => s.id === state.currentSet)?.questions || mcqSets[0].questions;
+  const allPBQ: PBQQuestion[] = pbqSets.find(s => s.id === state.currentSet)?.questions || [];
+  const allMCQ: MCQItem[] = mcqSets.find(s => s.id === state.currentSet)?.questions || [];
 
   const currentPBQ = useMemo(() => {
     if (selectedDomains.length === 0) return allPBQ;
@@ -85,9 +83,7 @@ const Index = () => {
   const onPBQFlag = (qId: string) => {
     setState((prev) => ({
       ...prev,
-      flagsPBQ: prev.flagsPBQ.includes(qId)
-        ? prev.flagsPBQ.filter((f) => f !== qId)
-        : [...prev.flagsPBQ, qId],
+      flagsPBQ: prev.flagsPBQ.includes(qId) ? prev.flagsPBQ.filter((f) => f !== qId) : [...prev.flagsPBQ, qId],
     }));
   };
 
@@ -98,15 +94,12 @@ const Index = () => {
   const onMCQFlag = (qId: string) => {
     setState((prev) => ({
       ...prev,
-      flagsMCQ: prev.flagsMCQ.includes(qId)
-        ? prev.flagsMCQ.filter((f) => f !== qId)
-        : [...prev.flagsMCQ, qId],
+      flagsMCQ: prev.flagsMCQ.includes(qId) ? prev.flagsMCQ.filter((f) => f !== qId) : [...prev.flagsMCQ, qId],
     }));
   };
 
   const showPBQ = state.mode === 'pbq' || state.mode === 'both';
   const showMCQ = state.mode === 'mcq' || state.mode === 'both';
-  const allSubmitted = (showPBQ ? state.pbqSubmitted : true) && (showMCQ ? state.mcqSubmitted : true);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -114,7 +107,7 @@ const Index = () => {
         mode={state.mode}
         onModeChange={setMode}
         onReset={handleReset}
-        submitted={allSubmitted}
+        submitted={false}
         currentSet={state.currentSet}
         onSetChange={setCurrentSet}
         selectedDomains={selectedDomains}
@@ -122,72 +115,63 @@ const Index = () => {
       />
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        {allSubmitted ? (
-          <ResultsScreen
-            pbqQuestions={showPBQ ? currentPBQ : []}
-            mcqQuestions={showMCQ ? currentMCQ : []}
-            pbqAnswers={state.pbqAnswers}
-            mcqAnswers={state.mcqAnswers}
-          />
-        ) : (
-          <div className={`grid gap-6 ${state.mode === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-3xl mx-auto'}`}>
-            {showPBQ && currentPBQ.length > 0 && (
-              <section aria-label="Performance-Based Questions">
-                <h2 className="text-sm font-mono text-accent uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-accent" />
-                  Performance-Based Questions — Set {state.currentSet}
-                  {selectedDomains.length > 0 && (
-                    <span className="text-muted-foreground text-[10px] normal-case">({currentPBQ.length} filtered)</span>
-                  )}
-                </h2>
-                <PBQSection
-                  questions={currentPBQ}
-                  answers={state.pbqAnswers}
-                  flags={state.flagsPBQ}
-                  onAnswer={onPBQAnswer}
-                  onToggleFlag={onPBQFlag}
-                  submitted={state.pbqSubmitted}
-                  onSubmit={handlePBQSubmit}
-                />
-              </section>
-            )}
-            {showPBQ && currentPBQ.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="font-mono text-sm">No PBQ questions match the selected domain filters.</p>
-              </div>
-            )}
-            {showMCQ && currentMCQ.length > 0 && (
-              <section aria-label="Multiple-Choice Questions">
-                <h2 className="text-sm font-mono text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  Multiple-Choice Questions — Set {state.currentSet}
-                  {selectedDomains.length > 0 && (
-                    <span className="text-muted-foreground text-[10px] normal-case">({currentMCQ.length} filtered)</span>
-                  )}
-                </h2>
-                <MCQSection
-                  questions={currentMCQ}
-                  answers={state.mcqAnswers}
-                  flags={state.flagsMCQ}
-                  onAnswer={onMCQAnswer}
-                  onToggleFlag={onMCQFlag}
-                  submitted={state.mcqSubmitted}
-                  onSubmit={handleMCQSubmit}
-                />
-              </section>
-            )}
-            {showMCQ && currentMCQ.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="font-mono text-sm">No MCQ questions match the selected domain filters.</p>
-              </div>
-            )}
-          </div>
-        )}
+        <div className={`grid gap-6 ${state.mode === 'both' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-3xl mx-auto'}`}>
+          {showPBQ && currentPBQ.length > 0 && (
+            <section aria-label="Performance-Based Questions">
+              <h2 className="text-sm font-mono text-accent uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent" />
+                PBQ — Set {state.currentSet}
+                {selectedDomains.length > 0 && (
+                  <span className="text-muted-foreground text-[10px] normal-case">({currentPBQ.length} filtered)</span>
+                )}
+              </h2>
+              <PBQSection
+                questions={currentPBQ}
+                answers={state.pbqAnswers}
+                flags={state.flagsPBQ}
+                onAnswer={onPBQAnswer}
+                onToggleFlag={onPBQFlag}
+                submitted={state.pbqSubmitted}
+                onSubmit={handlePBQSubmit}
+              />
+            </section>
+          )}
+          {showPBQ && currentPBQ.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="font-mono text-sm">No PBQ questions available for Set {state.currentSet} with current filters.</p>
+            </div>
+          )}
+          {showMCQ && currentMCQ.length > 0 && (
+            <section aria-label="Multiple-Choice Questions">
+              <h2 className="text-sm font-mono text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                MCQ — Set {state.currentSet}
+                {selectedDomains.length > 0 && (
+                  <span className="text-muted-foreground text-[10px] normal-case">({currentMCQ.length} filtered)</span>
+                )}
+              </h2>
+              <MCQSection
+                questions={currentMCQ}
+                answers={state.mcqAnswers}
+                flags={state.flagsMCQ}
+                onAnswer={onMCQAnswer}
+                onToggleFlag={onMCQFlag}
+                submitted={state.mcqSubmitted}
+                onSubmit={handleMCQSubmit}
+              />
+            </section>
+          )}
+          {showMCQ && currentMCQ.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="font-mono text-sm">No MCQ questions available for Set {state.currentSet} with current filters.</p>
+            </div>
+          )}
+        </div>
       </main>
 
-      <footer className="border-t border-border py-3 text-center">
+      <footer className="border-t border-border py-4 text-center">
         <p className="text-xs text-muted-foreground font-mono">
-          Security+ SY0-701 PBQ/MCQ Trainer • 3 question sets (A, B, C) • Filter by domain • Check only answered questions
+          Security+ SY0-701 Trainer • {pbqSets.length} PBQ sets • {mcqSets.length} MCQ sets • Filter by domain
         </p>
       </footer>
     </div>
