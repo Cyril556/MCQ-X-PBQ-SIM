@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shield, Filter, RotateCcw } from 'lucide-react';
+import { Shield, Filter, RotateCcw, ArrowLeft } from 'lucide-react';
 import { ExamMode } from '@/lib/examState';
 import { pbqSets, getAllPBQDomains } from '@/data/pbq';
 import { mcqSets, getAllMCQDomains } from '@/data/mcq';
@@ -13,9 +13,10 @@ interface ExamHeaderProps {
   onSetChange: (set: string) => void;
   selectedDomains: string[];
   onDomainsChange: (domains: string[]) => void;
+  onBackToDashboard: () => void;
 }
 
-export function ExamHeader({ mode, onModeChange, onReset, submitted, currentSet, onSetChange, selectedDomains, onDomainsChange }: ExamHeaderProps) {
+export function ExamHeader({ mode, onModeChange, onReset, submitted, currentSet, onSetChange, selectedDomains, onDomainsChange, onBackToDashboard }: ExamHeaderProps) {
   const [showFilter, setShowFilter] = useState(false);
 
   const modes: { value: ExamMode; label: string }[] = [
@@ -48,17 +49,22 @@ export function ExamHeader({ mode, onModeChange, onReset, submitted, currentSet,
 
   return (
     <header className="relative border-b border-border bg-card/80 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
-        {/* Logo */}
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+        {/* Back + Logo */}
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Shield className="h-4.5 w-4.5 text-primary" />
+          <button onClick={onBackToDashboard}
+            className="p-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+            aria-label="Back to dashboard">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <Shield className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-base font-bold font-mono tracking-tight text-foreground leading-none">
-              SY0-701 <span className="text-primary">Trainer</span>
+            <h1 className="text-sm font-bold font-mono tracking-tight text-foreground leading-none">
+              Practice Mode
             </h1>
-            <p className="text-[10px] text-muted-foreground font-mono">CompTIA Security+</p>
+            <p className="text-[10px] text-muted-foreground font-mono">Set {currentSet}</p>
           </div>
         </div>
 
@@ -67,19 +73,10 @@ export function ExamHeader({ mode, onModeChange, onReset, submitted, currentSet,
           <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider hidden sm:inline">Set</span>
           <nav className="flex rounded-lg border border-border overflow-hidden" role="tablist" aria-label="Question set">
             {availableSets.map((s) => (
-              <button
-                key={s}
-                role="tab"
-                aria-selected={currentSet === s}
-                onClick={() => onSetChange(s)}
+              <button key={s} role="tab" aria-selected={currentSet === s} onClick={() => onSetChange(s)}
                 className={`px-2.5 py-1.5 text-xs font-mono font-bold transition-colors ${
-                  currentSet === s
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                {s}
-              </button>
+                  currentSet === s ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}>{s}</button>
             ))}
           </nav>
         </div>
@@ -87,41 +84,25 @@ export function ExamHeader({ mode, onModeChange, onReset, submitted, currentSet,
         {/* Mode selector */}
         <nav className="flex rounded-lg border border-border overflow-hidden" role="tablist" aria-label="Exam mode">
           {modes.map((m) => (
-            <button
-              key={m.value}
-              role="tab"
-              aria-selected={mode === m.value}
-              onClick={() => onModeChange(m.value)}
+            <button key={m.value} role="tab" aria-selected={mode === m.value} onClick={() => onModeChange(m.value)}
               className={`px-4 py-1.5 text-sm font-medium transition-colors ${
-                mode === m.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              }`}
-            >
-              {m.label}
-            </button>
+                mode === m.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}>{m.label}</button>
           ))}
         </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowFilter(!showFilter)}
+          <button onClick={() => setShowFilter(!showFilter)}
             className={`p-2 rounded-md border transition-all ${
-              isFiltering
-                ? 'border-accent text-accent bg-accent/10'
-                : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-            aria-label="Filter by domain"
-          >
+              isFiltering ? 'border-accent text-accent bg-accent/10' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`} aria-label="Filter by domain">
             <Filter className="h-4 w-4" />
             {isFiltering && <span className="ml-1 text-xs font-mono">{selectedDomains.length}</span>}
           </button>
-          <button
-            onClick={onReset}
+          <button onClick={onReset}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-            aria-label="Reset progress"
-          >
+            aria-label="Reset progress">
             <RotateCcw className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Reset</span>
           </button>
@@ -140,17 +121,12 @@ export function ExamHeader({ mode, onModeChange, onReset, submitted, currentSet,
             </div>
             <div className="flex flex-wrap gap-2">
               {allDomains.map((domain) => (
-                <button
-                  key={domain}
-                  onClick={() => toggleDomain(domain)}
+                <button key={domain} onClick={() => toggleDomain(domain)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     selectedDomains.includes(domain)
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border'
-                  }`}
-                >
-                  {domain}
-                </button>
+                  }`}>{domain}</button>
               ))}
             </div>
           </div>

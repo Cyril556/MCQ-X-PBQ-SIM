@@ -1,4 +1,5 @@
 export type ExamMode = 'pbq' | 'mcq' | 'both';
+export type AppView = 'dashboard' | 'practice' | 'exam' | 'review' | 'readiness';
 
 export interface ExamState {
   pbqAnswers: Record<string, any>;
