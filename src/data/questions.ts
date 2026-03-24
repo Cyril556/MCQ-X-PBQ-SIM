@@ -1127,47 +1127,104 @@ function pickN<T>(arr: T[], n: number): T[] {
 }
 
 export interface ExamConfig {
+  examNumber: 1 | 2 | 3;
   pbqs: PBQuestion[];
   mcqs: MCQuestion[];
   totalQuestions: number;
 }
 
-export function buildExam(): ExamConfig {
-  // Pick 6 PBQs (mix of types)
-  const fwPbqs = pickN(pbqBank.filter(p => p.type === 'firewall'), 2);
-  const irPbqs = pickN(pbqBank.filter(p => p.type === 'ordering'), 1);
-  const logPbqs = pickN(pbqBank.filter(p => p.type === 'log-analysis'), 1);
-  const matchPbqs = pickN(pbqBank.filter(p => p.type === 'matching'), 1);
-  const placePbqs = pickN(pbqBank.filter(p => p.type === 'placement'), 1);
+// ── Seeded shuffle (same seed = same order) ──────────────────────
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── True random shuffle (different every time) ───────────────────
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickN<T>(arr: T[], n: number): T[] {
+  return shuffle(arr).slice(0, n);
+}
+
+// ── Shuffle answer options and remap answer index ────────────────
+export function shuffleOptions(q: MCQuestion): MCQuestion {
+  if (q.type === 'select-two') {
+    // For select-two, shuffle options and remap both answer indices
+    const original = q.options.map((opt, i) => ({ opt, i }));
+    const shuffled = shuffle(original);
+    const newOptions = shuffled.map(x => x.opt);
+    const oldAnswers = (q.answer as number[]);
+    const newAnswers = oldAnswers.map(oldIdx => shuffled.findIndex(x => x.i === oldIdx));
+    return { ...q, options: newOptions, answer: newAnswers.sort((a, b) => a - b) };
+  } else {
+    // Single answer
+    const original = q.options.map((opt, i) => ({ opt, i }));
+    const shuffled = shuffle(original);
+    const newOptions = shuffled.map(x => x.opt);
+    const newAnswer = shuffled.findIndex(x => x.i === (q.answer as number));
+    return { ...q, options: newOptions, answer: newAnswer };
+  }
+}
+
+// ── Exam seeds — each number yields a distinct, reproducible pool ─
+const EXAM_SEEDS: Record<1|2|3, number> = {
+  1: 42,
+  2: 137,
+  3: 999,
+};
+
+export function buildExam(examNumber: 1 | 2 | 3 = 1): ExamConfig {
+  const seed = EXAM_SEEDS[examNumber];
+
+  // Pick 6 PBQs (mix of types) — seeded per exam number
+  const fwPbqs  = seededShuffle(pbqBank.filter(p => p.type === 'firewall'),     seed).slice(0, 2);
+  const irPbqs  = seededShuffle(pbqBank.filter(p => p.type === 'ordering'),     seed + 1).slice(0, 1);
+  const logPbqs = seededShuffle(pbqBank.filter(p => p.type === 'log-analysis'), seed + 2).slice(0, 1);
+  const matchPbqs = seededShuffle(pbqBank.filter(p => p.type === 'matching'),   seed + 3).slice(0, 1);
+  const placePbqs = seededShuffle(pbqBank.filter(p => p.type === 'placement'),  seed + 4).slice(0, 1);
   const pbqs = shuffle([...fwPbqs, ...irPbqs, ...logPbqs, ...matchPbqs, ...placePbqs]);
 
   // Pick MCQs by domain weight (84 MCQ = 90 total - 6 PBQ)
   // D1: 12% = ~10, D2: 22% = ~18, D3: 18% = ~15, D4: 28% = ~24, D5: 20% = ~17
   const domainCounts: Record<Domain, number> = { D1: 10, D2: 18, D3: 15, D4: 24, D5: 17 };
-  
-  const allMCQ = [...mcqSingle, ...mcqSelectTwo];
+
   const selectedMCQ: MCQuestion[] = [];
   const usedIds = new Set<string>();
 
-  // Ensure ~10 select-two questions
   const selectTwoByDomain: Record<Domain, MCQuestion[]> = { D1:[], D2:[], D3:[], D4:[], D5:[] };
   mcqSelectTwo.forEach(q => selectTwoByDomain[q.domain].push(q));
-  
+
   for (const [domain, count] of Object.entries(domainCounts) as [Domain, number][]) {
-    const domainSingle = mcqSingle.filter(q => q.domain === domain);
-    const domainSelectTwo = selectTwoByDomain[domain];
-    
+    const domainSingle    = seededShuffle(mcqSingle.filter(q => q.domain === domain), seed + domain.charCodeAt(1));
+    const domainSelectTwo = seededShuffle(selectTwoByDomain[domain],                  seed + domain.charCodeAt(1) + 50);
+
     // Pick 2 select-two per domain if available
-    const stPicked = pickN(domainSelectTwo, Math.min(2, domainSelectTwo.length));
-    stPicked.forEach(q => { selectedMCQ.push(q); usedIds.add(q.id); });
-    
+    const stPicked = domainSelectTwo.slice(0, Math.min(2, domainSelectTwo.length));
+    stPicked.forEach(q => { selectedMCQ.push(shuffleOptions(q)); usedIds.add(q.id); });
+
     // Fill remaining with single-answer
     const remaining = count - stPicked.length;
-    const singlePicked = pickN(domainSingle.filter(q => !usedIds.has(q.id)), remaining);
-    singlePicked.forEach(q => { selectedMCQ.push(q); usedIds.add(q.id); });
+    domainSingle
+      .filter(q => !usedIds.has(q.id))
+      .slice(0, remaining)
+      .forEach(q => { selectedMCQ.push(shuffleOptions(q)); usedIds.add(q.id); });
   }
 
   return {
+    examNumber,
     pbqs,
     mcqs: shuffle(selectedMCQ),
     totalQuestions: pbqs.length + selectedMCQ.length,
@@ -1177,5 +1234,5 @@ export function buildExam(): ExamConfig {
 export function buildStudyQuestions(domain?: Domain): MCQuestion[] {
   const all = [...mcqSingle, ...mcqSelectTwo];
   const filtered = domain ? all.filter(q => q.domain === domain) : all;
-  return shuffle(filtered);
+  return shuffle(filtered).map(shuffleOptions);
 }
