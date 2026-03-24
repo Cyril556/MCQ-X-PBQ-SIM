@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer } from 'lucide-react';
+import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { MCQuestion, PBQuestion } from '@/data/questions';
 import { isMCQCorrect, isPBQCorrect, calculateScore, type ScoreResult } from '@/lib/examEngine';
@@ -13,13 +13,13 @@ interface NewExamEngineProps {
   pbqs: PBQuestion[];
   mcqs: MCQuestion[];
   durationMinutes: number;
-    examNumber?: 1 | 2 | 3;
+  examNumber?: 1 | 2 | 3;
   isStudyMode?: boolean;
   onFinish: () => void;
 }
 
 export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false, examNumber = 1, onFinish }: NewExamEngineProps) {
-  const questions = useMemo<UnifiedQ[]>(() => [
+  const questions = useMemo(() => [
     ...pbqs.map(q => ({ kind: 'pbq' as const, data: q })),
     ...mcqs.map(q => ({ kind: 'mcq' as const, data: q })),
   ], [pbqs, mcqs]);
@@ -33,7 +33,12 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showPBQLockWarning, setShowPBQLockWarning] = useState(false);
   const [pbqLocked, setPbqLocked] = useState(false);
-  const [startTime] = useState(Date.now());
+  
+  const [isPaused, setIsPaused] = useState(false);
+  const [startTime, setStartTime] = useState(Date.now());
+  const [totalPausedTime, setTotalPausedTime] = useState(0);
+  const [pauseStartTime, setPauseStartTime] = useState<number | null>(null);
+  
   const [remaining, setRemaining] = useState(durationMinutes * 60);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [studyRevealed, setStudyRevealed] = useState<Set<string>>(new Set());
@@ -44,26 +49,54 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const qId = cur.kind === 'pbq' ? cur.data.id : cur.data.id;
   const isPBQSection = idx < pbqs.length;
 
-  // Timer
+  // Timer logic with Pause
   useEffect(() => {
-    if (isStudyMode || submitted) return;
+    if (isStudyMode || submitted || isPaused) return;
+
     const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const r = Math.max(0, durationMinutes * 60 - elapsed);
+      const now = Date.now();
+      const elapsedTotal = Math.floor((now - startTime - totalPausedTime) / 1000);
+      const r = Math.max(0, durationMinutes * 60 - elapsedTotal);
+      
       setRemaining(r);
-      if (r <= 0) { clearInterval(interval); handleSubmit(); }
+      
+      if (r <= 0) {
+        clearInterval(interval);
+        handleSubmit();
+      }
     }, 1000);
+
     return () => clearInterval(interval);
-  }, [startTime, durationMinutes, submitted, isStudyMode]);
+  }, [startTime, durationMinutes, submitted, isStudyMode, isPaused, totalPausedTime]);
+
+  const togglePause = () => {
+    if (isPaused) {
+      // Resume
+      if (pauseStartTime) {
+        setTotalPausedTime(prev => prev + (Date.now() - pauseStartTime));
+      }
+      setPauseStartTime(null);
+      setIsPaused(false);
+    } else {
+      // Pause
+      setPauseStartTime(Date.now());
+      setIsPaused(true);
+    }
+  };
 
   // Track time per question
   useEffect(() => {
     setQStartTime(Date.now());
     return () => {
-      const elapsed = Math.floor((Date.now() - qStartTime) / 1000);
-      setQuestionTimes(prev => ({ ...prev, [qId]: (prev[qId] || 0) + elapsed }));
+      if (!isPaused) {
+        const elapsed = Math.floor((Date.now() - qStartTime) / 1000);
+        setQuestionTimes(prev => ({
+          ...prev,
+          [qId]: (prev[qId] || 0) + elapsed
+        }));
+      }
     };
-  }, [idx]);
+  }, [idx, isPaused]);
 
   const answeredCount = useMemo(() => {
     let c = 0;
@@ -86,40 +119,63 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
     setScoreResult(result);
     setSubmitted(true);
     setShowConfirmSubmit(false);
+    setIsPaused(false);
 
     // Save to history
     const attemptQs: QuestionAttempt[] = [
       ...pbqs.map(q => ({
-        questionId: q.id, questionText: q.title, domain: DOMAIN_LABELS[q.domain],
-        type: 'pbq' as const, isCorrect: isPBQCorrect(q, pbqAnswers[q.id]),
-        userAnswer: JSON.stringify(pbqAnswers[q.id] || {}), correctAnswer: '',
-        explanation: q.explanation, timeSpentSeconds: questionTimes[q.id] || 0, timestamp: Date.now(),
+        questionId: q.id,
+        questionText: q.title,
+        domain: DOMAIN_LABELS[q.domain],
+        type: 'pbq' as const,
+        isCorrect: isPBQCorrect(q, pbqAnswers[q.id]),
+        userAnswer: JSON.stringify(pbqAnswers[q.id] || {}),
+        correctAnswer: '',
+        explanation: q.explanation,
+        timeSpentSeconds: questionTimes[q.id] || 0,
+        timestamp: Date.now(),
       })),
       ...mcqs.map(q => ({
-        questionId: q.id, questionText: q.question, domain: DOMAIN_LABELS[q.domain],
-        type: 'mcq' as const, isCorrect: isMCQCorrect(q, mcqAnswers[q.id]),
+        questionId: q.id,
+        questionText: q.question,
+        domain: DOMAIN_LABELS[q.domain],
+        type: 'mcq' as const,
+        isCorrect: isMCQCorrect(q, mcqAnswers[q.id]),
         userAnswer: mcqAnswers[q.id] !== undefined ? String(mcqAnswers[q.id]) : 'Not answered',
-        correctAnswer: String(q.answer), explanation: q.explanation,
-        timeSpentSeconds: questionTimes[q.id] || 0, timestamp: Date.now(),
+        correctAnswer: String(q.answer),
+        explanation: q.explanation,
+        timeSpentSeconds: questionTimes[q.id] || 0,
+        timestamp: Date.now(),
       })),
     ];
+
     const domainScores: Record<string, { correct: number; total: number }> = {};
-    Object.entries(result.domainScores).forEach(([k, v]) => { domainScores[k] = { correct: v.correct, total: v.total }; });
+    Object.entries(result.domainScores).forEach(([k, v]) => {
+      domainScores[k] = { correct: v.correct, total: v.total };
+    });
+
     saveAttempt({
-      id: `exam-${Date.now()}`, mode: isStudyMode ? 'practice' : 'exam',
-      startTime, endTime: Date.now(), totalQuestions: questions.length,
-      correctAnswers: result.rawCorrect, percentage: Math.round((result.rawCorrect / result.rawTotal) * 100),
-      passed: result.passed, questions: attemptQs, domainScores,
+      id: `exam-${Date.now()}`,
+      mode: isStudyMode ? 'practice' : 'exam',
+      startTime,
+      endTime: Date.now(),
+      totalQuestions: questions.length,
+      correctAnswers: result.rawCorrect,
+      percentage: Math.round((result.rawCorrect / result.rawTotal) * 100),
+      passed: result.passed,
+      questions: attemptQs,
+      domainScores,
     });
   }, [pbqs, mcqs, pbqAnswers, mcqAnswers, startTime, questionTimes, isStudyMode]);
 
   const goTo = (newIdx: number) => {
+    if (isPaused) return;
     // PBQ lock check
     if (!pbqLocked && isPBQSection && newIdx >= pbqs.length) {
       setShowPBQLockWarning(true);
       return;
     }
-    if (pbqLocked && newIdx < pbqs.length) return; // Can't go back to PBQs
+    if (pbqLocked && newIdx < pbqs.length) return; 
     setIdx(newIdx);
   };
 
@@ -130,233 +186,249 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   };
 
   const toggleFlag = () => {
-    setFlags(prev => { const n = new Set(prev); if (n.has(qId)) n.delete(qId); else n.add(qId); return n; });
+    setFlags(prev => {
+      const n = new Set(prev);
+      if (n.has(qId)) n.delete(qId);
+      else n.add(qId);
+      return n;
+    });
   };
 
-  // Show results screen
   if (submitted && scoreResult && !isStudyMode) {
-    return <ExamResults score={scoreResult} pbqs={pbqs} mcqs={mcqs} pbqAnswers={pbqAnswers} mcqAnswers={mcqAnswers} onRestart={onFinish} onBackToMenu={onFinish} />;
+    return <ExamResults score={scoreResult} pbqs={pbqs} mcqs={mcqs} pbqAnswers={pbqAnswers} mcqAnswers={mcqAnswers} onRestart={() => window.location.reload()} onBackToMenu={onFinish} />;
   }
 
   const timerMins = Math.floor(remaining / 60);
   const timerSecs = remaining % 60;
   const timerDisplay = `${String(timerMins).padStart(2,'0')}:${String(timerSecs).padStart(2,'0')}`;
-  const isWarning30 = remaining <= 1800 && remaining > 600;
   const isWarning10 = remaining <= 600;
-  const pct = (remaining / (durationMinutes * 60)) * 100;
-
-  // Per-question stopwatch
-  const qElapsed = Math.floor((Date.now() - qStartTime) / 1000);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20">
+      
+      {/* Pause Overlay */}
+      {isPaused && (
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-md flex flex-col items-center justify-center">
+          <div className="p-8 rounded-2xl bg-card border border-border shadow-2xl text-center max-w-sm mx-4">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <Pause className="w-10 h-10 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Exam Paused</h2>
+            <p className="text-muted-foreground mb-8 text-sm">Your progress and timer are saved. Take a breath and resume when ready.</p>
+            <button 
+              onClick={togglePause}
+              className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-lg hover:opacity-90 transition-all shadow-lg flex items-center justify-center gap-3"
+            >
+              <Play className="w-5 h-5 fill-current" />
+              Resume Exam
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Confirm Submit Dialog */}
       <Dialog open={showConfirmSubmit} onOpenChange={setShowConfirmSubmit}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Submit Exam?</DialogTitle>
             <DialogDescription>
-              {unansweredCount > 0
+              {unansweredCount > 0 
                 ? `You have ${unansweredCount} unanswered question${unansweredCount > 1 ? 's' : ''}. Submit anyway?`
                 : 'Are you sure you want to submit your exam?'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-3 justify-end mt-4">
+          <div className="flex justify-end gap-3 mt-4">
             <button onClick={() => setShowConfirmSubmit(false)} className="px-4 py-2 rounded-md border border-border text-sm">Continue Exam</button>
-            <button onClick={handleSubmit} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-bold">Submit</button>
+            <button onClick={handleSubmit} className="px-4 py-2 rounded-md bg-accent text-accent-foreground font-bold text-sm">Submit</button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* PBQ Lock Warning */}
       <Dialog open={showPBQLockWarning} onOpenChange={setShowPBQLockWarning}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Leaving PBQ Section</DialogTitle>
+            <DialogTitle>Leaving PBQ Section</DialogTitle>
             <DialogDescription>
-              You are leaving the Performance-Based Questions section. You <strong>cannot return</strong> to these questions. Continue?
+              You are leaving the Performance-Based Questions section. You **cannot return** to these questions. Continue?
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-3 justify-end mt-4">
+          <div className="flex justify-end gap-3 mt-4">
             <button onClick={() => setShowPBQLockWarning(false)} className="px-4 py-2 rounded-md border border-border text-sm">Stay in PBQs</button>
-            <button onClick={confirmLeavePBQ} className="px-4 py-2 rounded-md bg-warning text-warning-foreground text-sm font-bold">Continue to MCQs</button>
+            <button onClick={confirmLeavePBQ} className="px-4 py-2 rounded-md bg-accent text-accent-foreground font-bold text-sm">Continue to MCQs</button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Warning Banners */}
-      {!isStudyMode && isWarning10 && !submitted && (
-        <div className="bg-destructive/20 border-b border-destructive text-destructive text-center py-2 text-xs font-bold font-mono animate-pulse">
-          ⚠ LESS THAN 10 MINUTES REMAINING
-        </div>
-      )}
-      {!isStudyMode && isWarning30 && !isWarning10 && !submitted && (
-        <div className="bg-warning/20 border-b border-warning text-warning text-center py-1.5 text-xs font-mono">
-          ⚠ 30 minutes or less remaining
-        </div>
-      )}
-
       {/* Header Bar */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold font-mono text-foreground">
-              Question {idx + 1} of {questions.length}
-            </span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold uppercase ${
-              cur.kind === 'pbq' ? 'bg-accent/20 text-accent' : 'bg-primary/20 text-primary'
-            }`}>{cur.kind === 'pbq' ? 'PBQ' : cur.data.type === 'select-two' ? 'SELECT TWO' : 'MCQ'}</span>
-            {pbqLocked && isPBQSection && <span className="text-[10px] text-destructive font-mono">LOCKED</span>}
-            <span className="text-[10px] text-muted-foreground font-mono">{flags.size} flagged</span>
+      <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">Question</span>
+            <span className="text-xl font-black font-mono leading-none">{idx + 1}<span className="text-muted-foreground/30 mx-1">/</span>{questions.length}</span>
           </div>
+          <div className="h-8 w-[1px] bg-border mx-2 hidden sm:block" />
+          <div className="hidden sm:flex items-center gap-2">
+            <span className={`px-2 py-1 rounded text-[10px] font-black tracking-tighter ${cur.kind === 'pbq' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'}`}>
+              {cur.kind === 'pbq' ? 'PBQ' : cur.data.type === 'select-two' ? 'SELECT TWO' : 'MCQ'}
+            </span>
+            {pbqLocked && isPBQSection && <span className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> LOCKED</span>}
+          </div>
+        </div>
 
-          <div className="flex items-center gap-3">
-            {/* Per-question stopwatch */}
-            {!submitted && (
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-mono ${qElapsed > 60 ? 'text-warning bg-warning/10' : 'text-muted-foreground bg-muted/50'}`}>
-                <Timer className="h-3 w-3" />
-                <QuestionTimer startTime={qStartTime} />
-              </div>
-            )}
-
-            {/* Exam timer */}
-            {!isStudyMode && !submitted && (
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border font-mono text-sm ${
-                isWarning10 ? 'border-destructive bg-destructive/10 text-destructive animate-pulse' :
-                isWarning30 ? 'border-warning bg-warning/10 text-warning' :
-                'border-border bg-card text-foreground'
+        <div className="flex items-center gap-2 sm:gap-4">
+          {!isStudyMode && !submitted && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={togglePause}
+                className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted transition-all text-muted-foreground hover:text-foreground group"
+                title="Pause Exam"
+              >
+                <Pause className="h-4 w-4 fill-current group-hover:scale-110 transition-transform" />
+              </button>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-mono font-bold text-lg shadow-inner transition-colors ${
+                isWarning10 ? 'bg-destructive/10 border-destructive text-destructive animate-pulse' : 'bg-muted/50 border-border text-foreground'
               }`}>
-                <Clock className="h-4 w-4" />
-                <span className="font-bold">{timerDisplay}</span>
-                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden hidden sm:block">
-                  <div className={`h-full rounded-full transition-all ${isWarning10 ? 'bg-destructive' : isWarning30 ? 'bg-warning' : 'bg-primary'}`}
-                    style={{ width: `${pct}%` }} />
-                </div>
+                <Clock className={`h-4 w-4 ${isWarning10 ? 'text-destructive' : 'text-muted-foreground'}`} />
+                {timerDisplay}
               </div>
-            )}
-
-            <button onClick={() => setShowNav(!showNav)}
-              className="p-2 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
-              <ListChecks className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="h-1 bg-muted">
-          <div className="h-full bg-primary transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
-        </div>
-
-        {/* Navigation Grid */}
-        {showNav && (
-          <div className="border-t border-border bg-card/90 px-4 py-3 animate-fade-in">
-            <div className="container mx-auto flex flex-wrap gap-1.5">
-              {questions.map((q, i) => {
-                const id = q.kind === 'pbq' ? q.data.id : q.data.id;
-                const answered = q.kind === 'pbq'
-                  ? (pbqAnswers[id] && (Array.isArray(pbqAnswers[id]) ? pbqAnswers[id].some((a: any) => a !== '') : typeof pbqAnswers[id] === 'object' && Object.keys(pbqAnswers[id]).length > 0))
-                  : mcqAnswers[id] !== undefined;
-                const flagged = flags.has(id);
-                const locked = pbqLocked && i < pbqs.length;
-                return (
-                  <button key={id} onClick={() => !locked && goTo(i)} disabled={locked}
-                    className={`relative w-8 h-8 rounded text-[10px] font-mono font-bold transition-all ${
-                      i === idx ? 'bg-primary text-primary-foreground ring-2 ring-primary/50' :
-                      locked ? 'bg-muted/50 text-muted-foreground/30 cursor-not-allowed' :
-                      answered ? 'bg-muted text-foreground' :
-                      'bg-card text-muted-foreground border border-border hover:border-primary/50'
-                    }`}>
-                    {i + 1}
-                    {flagged && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-accent rounded-full" />}
-                  </button>
-                );
-              })}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Question Content */}
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-3xl">
-        <div className="bg-card border border-border rounded-lg p-6 animate-fade-in">
-          {/* Domain & Flag */}
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">
-              {DOMAIN_LABELS[cur.kind === 'pbq' ? cur.data.domain : cur.data.domain]}
-            </span>
-            <button onClick={toggleFlag} className={`p-2 rounded-md transition-colors ${flags.has(qId) ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:text-accent'}`}>
-              <Flag className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Render question */}
-          {cur.kind === 'pbq' ? (
-            <PBQRenderer q={cur.data} ans={pbqAnswers[cur.data.id]} onAns={a => setPbqAnswers(p => ({...p,[cur.data.id]:a}))} submitted={submitted} studyRevealed={isStudyMode && studyRevealed.has(cur.data.id)} />
-          ) : (
-            <MCQRenderer q={cur.data} ans={mcqAnswers[cur.data.id]} onAns={a => setMcqAnswers(p => ({...p,[cur.data.id]:a}))} submitted={submitted} studyRevealed={isStudyMode && studyRevealed.has(cur.data.id)} />
           )}
-
-          {/* Study mode reveal */}
-          {isStudyMode && !studyRevealed.has(qId) && (
-            <button onClick={() => setStudyRevealed(prev => new Set(prev).add(qId))}
-              className="mt-4 px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-bold hover:opacity-90">
-              Show Answer & Explanation
-            </button>
-          )}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-            <button onClick={() => goTo(Math.max(0, idx - 1))} disabled={idx === 0 || (pbqLocked && idx - 1 < pbqs.length)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-border text-sm text-foreground hover:bg-muted disabled:opacity-30 transition-all">
-              <ChevronLeft className="h-4 w-4" /> Previous
-            </button>
-
-            <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
-              {answeredCount}/{questions.length} answered
-            </span>
-
-            {idx < questions.length - 1 ? (
-              <button onClick={() => goTo(idx + 1)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
-                Next <ChevronRight className="h-4 w-4" />
-              </button>
-            ) : !isStudyMode ? (
-              <button onClick={() => setShowConfirmSubmit(true)}
-                className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 shadow-lg">
-                Submit Exam
-              </button>
-            ) : (
-              <button onClick={onFinish}
-                className="px-5 py-2 rounded-md border border-border text-sm font-medium hover:bg-muted">
-                Finish Study Session
-              </button>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Bottom Submit Bar (exam mode only) */}
-      {!isStudyMode && !submitted && idx >= questions.length - 1 && (
-        <div className="border-t border-border bg-card/80 backdrop-blur-sm py-3 text-center">
-          <button onClick={() => setShowConfirmSubmit(true)}
-            className="px-8 py-3 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 shadow-lg">
-            Submit Exam ({answeredCount}/{questions.length})
+          <button 
+            onClick={() => setShowNav(!showNav)} 
+            className={`p-2.5 rounded-xl border transition-all ${showNav ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}
+          >
+            <ListChecks className="h-5 w-5" />
           </button>
         </div>
-      )}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto bg-[#fafafa] dark:bg-background">
+        <div className="max-w-4xl mx-auto p-4 sm:p-8">
+          
+          {/* Progress Grid */}
+          {showNav && (
+            <div className="mb-8 p-6 rounded-2xl bg-card border border-border shadow-xl animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <ListChecks className="h-4 w-4 text-primary" />
+                  Exam Navigator
+                </h3>
+                <span className="text-xs font-medium text-muted-foreground">{answeredCount} of {questions.length} answered</span>
+              </div>
+              <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-12 gap-2">
+                {questions.map((q, i) => {
+                  const id = q.kind === 'pbq' ? q.data.id : q.data.id;
+                  const answered = q.kind === 'pbq' 
+                    ? (pbqAnswers[id] && (Array.isArray(pbqAnswers[id]) ? pbqAnswers[id].some((a: any) => a !== '') : typeof pbqAnswers[id] === 'object' && Object.keys(pbqAnswers[id]).length > 0))
+                    : mcqAnswers[id] !== undefined;
+                  const flagged = flags.has(id);
+                  const locked = pbqLocked && i < pbqs.length;
+                  
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => !locked && goTo(i)}
+                      disabled={locked}
+                      className={`relative aspect-square rounded-lg text-xs font-mono font-black transition-all ${
+                        i === idx ? 'bg-primary text-primary-foreground scale-110 shadow-lg z-10' :
+                        locked ? 'bg-muted/30 text-muted-foreground/20 cursor-not-allowed opacity-50' :
+                        answered ? 'bg-primary/10 text-primary border-2 border-primary/20' :
+                        'bg-card text-muted-foreground border border-border hover:border-primary/50'
+                      }`}
+                    >
+                      {i + 1}
+                      {flagged && <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full border-2 border-card" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-card rounded-3xl border border-border shadow-sm min-h-[500px] flex flex-col">
+            <div className="p-6 sm:p-10 flex-1">
+              <div className="flex items-center justify-between mb-8">
+                <span className="px-3 py-1 rounded-full bg-muted text-[10px] font-bold text-muted-foreground tracking-tight uppercase">
+                  {DOMAIN_LABELS[cur.kind === 'pbq' ? cur.data.domain : cur.data.domain]}
+                </span>
+                <button 
+                  onClick={toggleFlag} 
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                    flags.has(qId) ? 'bg-accent/10 border-accent text-accent' : 'bg-muted border-transparent text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  <Flag className={`h-3 w-3 ${flags.has(qId) ? 'fill-current' : ''}`} />
+                  {flags.has(qId) ? 'FLAGGED' : 'FLAG FOR REVIEW'}
+                </button>
+              </div>
+
+              {cur.kind === 'pbq' ? (
+                <PBQRenderer q={cur.data} ans={pbqAnswers[cur.data.id]} onAns={a => setPbqAnswers(p => ({...p,[cur.data.id]:a}))} submitted={submitted} studyRevealed={isStudyMode && studyRevealed.has(cur.data.id)} />
+              ) : (
+                <MCQRenderer q={cur.data} ans={mcqAnswers[cur.data.id]} onAns={a => setMcqAnswers(p => ({...p,[cur.data.id]:a}))} submitted={submitted} studyRevealed={isStudyMode && studyRevealed.has(cur.data.id)} />
+              )}
+            </div>
+
+            {isStudyMode && !studyRevealed.has(qId) && (
+              <div className="p-6 border-t border-border bg-accent/5">
+                <button 
+                  onClick={() => setStudyRevealed(prev => new Set(prev).add(qId))}
+                  className="w-full py-4 rounded-xl bg-accent text-accent-foreground font-black text-sm hover:opacity-90 transition-all shadow-md uppercase tracking-widest"
+                >
+                  Show Answer & Explanation
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Navigation */}
+      <div className="bg-card border-t border-border px-4 py-4 sm:px-10 flex items-center justify-between">
+        <button 
+          onClick={() => goTo(Math.max(0, idx - 1))} 
+          disabled={idx === 0 || (pbqLocked && idx - 1 < pbqs.length)}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border font-bold text-sm text-foreground hover:bg-muted disabled:opacity-30 transition-all group"
+        >
+          <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+          Previous
+        </button>
+
+        <div className="hidden md:flex flex-col items-center">
+          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Overall Progress</div>
+          <div className="flex items-center gap-2">
+            <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${(answeredCount/questions.length)*100}%` }} />
+            </div>
+            <span className="text-xs font-mono font-bold text-primary">{Math.round((answeredCount/questions.length)*100)}%</span>
+          </div>
+        </div>
+
+        {idx < questions.length - 1 ? (
+          <button 
+            onClick={() => goTo(idx + 1)}
+            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 transition-all shadow-lg group"
+          >
+            Next
+            <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+        ) : (
+          <button 
+            onClick={() => !isStudyMode ? setShowConfirmSubmit(true) : onFinish()}
+            className="px-8 py-3 rounded-xl bg-accent text-accent-foreground font-black text-sm hover:opacity-90 shadow-xl animate-pulse transition-all uppercase tracking-widest"
+          >
+            {isStudyMode ? 'Finish Session' : 'Submit Exam'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-/* ===== Question Timer ===== */
-function QuestionTimer({ startTime }: { startTime: number }) {
-  const [, setTick] = useState(0);
-  useEffect(() => { const i = setInterval(() => setTick(t => t+1), 1000); return () => clearInterval(i); }, [startTime]);
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  return <span>{Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')}</span>;
-}
+/* Rest of the file (MCQRenderer, PBQRenderer, etc.) remains unchanged */
 
-/* ===== MCQ Renderer ===== */
 function MCQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: MCQuestion; ans?: number | number[]; onAns: (a: number | number[]) => void; submitted: boolean; studyRevealed: boolean }) {
   const showFeedback = submitted || studyRevealed;
   const isSelected = (i: number) => {
@@ -367,101 +439,140 @@ function MCQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: MCQuestio
 
   const handleSelect = (i: number) => {
     if (showFeedback) return;
-    if (q.type === 'single') { onAns(i); }
-    else {
+    if (q.type === 'single') {
+      onAns(i);
+    } else {
       const prev = (ans as number[] | undefined) || [];
       onAns(prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
     }
   };
 
   return (
-    <div>
-      <h3 className="text-base font-semibold text-foreground mb-1">{q.question}</h3>
-      {q.type === 'select-two' && <p className="text-xs text-accent mb-4 italic font-bold">Select exactly TWO answers</p>}
-      <div className="flex flex-col gap-2 mt-4">
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <h3 className="text-xl font-bold leading-relaxed mb-8">{q.question}</h3>
+      {q.type === 'select-two' && <div className="mb-4 px-3 py-1 rounded bg-accent/10 border border-accent/20 text-accent text-[10px] font-black inline-block tracking-widest">SELECT EXACTLY TWO</div>}
+      
+      <div className="grid gap-3">
         {q.options.map((opt, i) => {
           const sel = isSelected(i);
           const correct = isCorrectOpt(i);
-          let cls = 'bg-muted/50 border-border text-foreground hover:border-primary/40';
+          let cls = 'bg-card border-border text-foreground hover:border-primary/40 hover:bg-muted/30';
+          
           if (showFeedback && sel && correct) cls = 'bg-success/10 border-success text-success';
           else if (showFeedback && sel && !correct) cls = 'bg-destructive/10 border-destructive text-destructive';
           else if (showFeedback && !sel && correct) cls = 'bg-success/5 border-success/50 text-success';
-          else if (sel) cls = 'bg-primary/10 border-primary text-foreground';
+          else if (sel) cls = 'bg-primary/5 border-primary shadow-[0_0_0_1px_rgba(var(--primary),0.1)]';
+
           return (
-            <button key={i} onClick={() => handleSelect(i)} disabled={showFeedback}
-              className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm text-left transition-all ${cls}`}>
-              <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">
+            <button
+              key={i}
+              onClick={() => handleSelect(i)}
+              disabled={showFeedback}
+              className={`flex items-start gap-4 px-5 py-4 rounded-2xl border text-sm text-left transition-all duration-200 group ${cls}`}
+            >
+              <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-xs transition-colors ${
+                sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground group-hover:border-primary/40'
+              }`}>
                 {String.fromCharCode(65+i)}
-              </span>
-              <span className="flex-1">{opt}</span>
-              {showFeedback && sel && correct && <CheckCircle2 className="h-4 w-4 text-success" />}
-              {showFeedback && sel && !correct && <XCircle className="h-4 w-4 text-destructive" />}
+              </div>
+              <span className="flex-1 leading-relaxed">{opt}</span>
+              {showFeedback && sel && correct && <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />}
+              {showFeedback && sel && !correct && <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
             </button>
           );
         })}
       </div>
+
       {showFeedback && (
-        <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
-          <span className="font-bold text-primary text-xs">EXPLANATION:</span> {q.explanation}
+        <div className="mt-10 p-6 rounded-2xl bg-muted/30 border border-border animate-in zoom-in-95 duration-500">
+          <div className="flex items-center gap-2 mb-3 text-primary uppercase tracking-widest font-black text-[10px]">
+            <ListChecks className="h-4 w-4" />
+            Explanation
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">{q.explanation}</p>
         </div>
       )}
     </div>
   );
 }
 
-/* ===== PBQ Renderer ===== */
 function PBQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: PBQuestion; ans: any; onAns: (a: any) => void; submitted: boolean; studyRevealed: boolean }) {
   const showFeedback = submitted || studyRevealed;
-
   return (
-    <div>
-      <h3 className="text-lg font-bold text-foreground mb-1">{q.title}</h3>
-      <div className="bg-muted/50 border border-border rounded-md p-4 mb-5 text-sm text-muted-foreground font-mono leading-relaxed whitespace-pre-line">{q.scenario}</div>
-
-      {q.type === 'firewall' && <FirewallPBQ q={q} ans={ans || []} onAns={onAns} show={showFeedback} />}
-      {q.type === 'ordering' && <OrderingPBQ q={q} ans={ans || []} onAns={onAns} show={showFeedback} />}
-      {q.type === 'log-analysis' && <LogAnalysisPBQ q={q} ans={ans || {}} onAns={onAns} show={showFeedback} />}
-      {q.type === 'matching' && <MatchingPBQ q={q} ans={ans || {}} onAns={onAns} show={showFeedback} />}
-      {q.type === 'placement' && <PlacementPBQ q={q} ans={ans || {}} onAns={onAns} show={showFeedback} />}
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <h3 className="text-xl font-bold mb-2">{q.title}</h3>
+      <p className="text-muted-foreground text-sm mb-8 leading-relaxed italic">{q.scenario}</p>
+      
+      <div className="p-1">
+        {q.type === 'firewall' && <FirewallPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
+        {q.type === 'ordering' && <OrderingPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
+        {q.type === 'log-analysis' && <LogAnalysisPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
+        {q.type === 'matching' && <MatchingPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
+        {q.type === 'placement' && <PlacementPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
+      </div>
 
       {showFeedback && (
-        <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
-          <span className="font-bold text-primary text-xs">EXPLANATION:</span> {q.explanation}
+        <div className="mt-10 p-6 rounded-2xl bg-muted/30 border border-border animate-in zoom-in-95 duration-500">
+          <div className="flex items-center gap-2 mb-3 text-primary uppercase tracking-widest font-black text-[10px]">
+            <ListChecks className="h-4 w-4" />
+            Explanation
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">{q.explanation}</p>
         </div>
       )}
     </div>
   );
 }
 
-/* ===== Firewall PBQ ===== */
 function FirewallPBQ({ q, ans, onAns, show }: { q: PBQFirewall; ans: string[]; onAns: (a: string[]) => void; show: boolean }) {
-  const curr = ans.length ? ans : q.rules.map(() => '');
-  const set = (i: number, v: string) => { const n = [...curr]; n[i] = v; onAns(n); };
+  const curr = ans?.length ? ans : q.rules.map(() => '');
+  const set = (i: number, v: string) => {
+    const n = [...curr];
+    n[i] = v;
+    onAns(n);
+  };
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead><tr className="border-b border-border">
-          {['Rule','Source','Dest','Port','Proto','Action'].map(h => <th key={h} className="text-left py-2 px-3 text-muted-foreground font-mono text-xs">{h}</th>)}
-        </tr></thead>
-        <tbody>
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+      <table className="w-full text-left border-collapse">
+        <thead className="bg-muted/50 border-b border-border">
+          <tr>
+            {['Rule','Source','Dest','Port','Proto','Action'].map(h => (
+              <th key={h} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
           {q.rules.map((r, i) => {
             const ok = show && curr[i] === q.correctActions[i];
             const bad = show && curr[i] && curr[i] !== q.correctActions[i];
             return (
-              <tr key={r.ruleId} className={`border-b border-border/50 ${ok ? 'bg-success/5' : bad ? 'bg-destructive/5' : ''}`}>
-                <td className="py-2 px-3 font-mono">{r.ruleId}</td>
-                <td className="py-2 px-3 font-mono text-xs">{r.sourceIP}</td>
-                <td className="py-2 px-3 font-mono text-xs">{r.destIP}</td>
-                <td className="py-2 px-3 font-mono">{r.port}</td>
-                <td className="py-2 px-3 font-mono">{r.protocol}</td>
-                <td className="py-2 px-3">
-                  <div className="flex gap-1 items-center">
+              <tr key={i} className="hover:bg-muted/30 transition-colors">
+                <td className="px-4 py-3 font-mono text-xs">{r.ruleId}</td>
+                <td className="px-4 py-3 font-mono text-xs">{r.sourceIP}</td>
+                <td className="px-4 py-3 font-mono text-xs">{r.destIP}</td>
+                <td className="px-4 py-3 font-mono text-xs">{r.port}</td>
+                <td className="px-4 py-3 font-mono text-xs">{r.protocol}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1">
                     {['ALLOW','DENY'].map(a => (
-                      <button key={a} disabled={show} onClick={() => set(i, a)}
-                        className={`px-3 py-1 rounded text-xs font-bold transition-all ${curr[i] === a ? (a === 'ALLOW' ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground') : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>{a}</button>
+                      <button
+                        key={a}
+                        onClick={() => !show && set(i, a)}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${
+                          curr[i] === a 
+                            ? (a === 'ALLOW' ? 'bg-success text-success-foreground shadow-md' : 'bg-destructive text-destructive-foreground shadow-md') 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        }`}
+                      >
+                        {a}
+                      </button>
                     ))}
-                    {ok && <CheckCircle2 className="h-4 w-4 text-success ml-1" />}
-                    {bad && <><XCircle className="h-4 w-4 text-destructive ml-1" /><span className="text-xs text-success font-mono">{q.correctActions[i]}</span></>}
+                    {ok && <CheckCircle2 className="ml-2 h-4 w-4 text-success" />}
+                    {bad && <div className="ml-2 flex flex-col">
+                      <XCircle className="h-4 w-4 text-destructive" />
+                      <span className="text-[8px] font-bold text-success uppercase">{q.correctActions[i]}</span>
+                    </div>}
                   </div>
                 </td>
               </tr>
@@ -473,13 +584,13 @@ function FirewallPBQ({ q, ans, onAns, show }: { q: PBQFirewall; ans: string[]; o
   );
 }
 
-import type { PBQFirewall, PBQOrdering, PBQLogAnalysis, PBQMatching, PBQPlacement } from '@/data/questions';
-
-/* ===== Ordering PBQ ===== */
 function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; onAns: (a: string[]) => void; show: boolean }) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const currentOrder = ans.length > 0 ? ans : q.steps.map(s => s.label).sort(() => Math.random() - 0.5);
-  if (ans.length === 0 && q.steps.length > 0) setTimeout(() => onAns(currentOrder), 0);
+  const currentOrder = ans?.length > 0 ? ans : q.steps.map(s => s.label).sort(() => Math.random() - 0.5);
+  
+  if (!ans?.length && q.steps.length > 0) {
+    setTimeout(() => onAns(currentOrder), 0);
+  }
 
   const handleDrop = (targetIdx: number) => {
     if (dragIdx === null || show) return;
@@ -491,23 +602,43 @@ function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; o
   };
 
   return (
-    <div className="space-y-2">
-      <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Drag to reorder</h4>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-4">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Drag to reorder steps</span>
+      </div>
       {currentOrder.map((step, i) => {
         const ci = q.steps.find(s => s.label === step);
         const ok = show && ci && ci.correctPosition === i;
         const bad = show && ci && ci.correctPosition !== i;
+        
         return (
-          <div key={step} draggable={!show} onDragStart={() => setDragIdx(i)} onDragEnd={() => setDragIdx(null)}
-            onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleDrop(i); }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm transition-all ${
-              ok ? 'bg-success/10 border-success text-success' : bad ? 'bg-destructive/10 border-destructive text-destructive' : dragIdx === i ? 'border-accent bg-accent/10 opacity-50' : 'border-border bg-muted text-foreground'
-            } ${!show ? 'cursor-grab active:cursor-grabbing' : ''}`}>
-            <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">{i+1}</span>
-            <span className="flex-1">{step}</span>
+          <div
+            key={step}
+            draggable={!show}
+            onDragStart={() => setDragIdx(i)}
+            onDragEnd={() => setDragIdx(null)}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); handleDrop(i); }}
+            className={`flex items-center gap-4 px-5 py-4 rounded-2xl border text-sm transition-all shadow-sm ${
+              ok ? 'bg-success/10 border-success text-success' :
+              bad ? 'bg-destructive/10 border-destructive text-destructive' :
+              dragIdx === i ? 'border-primary bg-primary/5 opacity-50 scale-95' :
+              'border-border bg-card text-foreground hover:border-primary/40'
+            } ${!show ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : ''}`}
+          >
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono font-black text-xs ${
+              ok ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
+            }`}>
+              {i+1}
+            </div>
+            <span className="flex-1 font-medium">{step}</span>
+            <GripVertical className="h-4 w-4 text-muted-foreground opacity-30" />
             {ok && <CheckCircle2 className="h-4 w-4 text-success" />}
-            {bad && ci && <><XCircle className="h-4 w-4 text-destructive" /><span className="text-xs text-success font-mono">#{ci.correctPosition+1}</span></>}
+            {bad && ci && <div className="text-right flex flex-col">
+              <XCircle className="h-4 w-4 text-destructive ml-auto" />
+              <span className="text-[10px] font-black text-success uppercase">Correct: #{ci.correctPosition+1}</span>
+            </div>}
           </div>
         );
       })}
@@ -515,67 +646,93 @@ function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; o
   );
 }
 
-/* ===== Log Analysis PBQ ===== */
 function LogAnalysisPBQ({ q, ans, onAns, show }: { q: PBQLogAnalysis; ans: any; onAns: (a: any) => void; show: boolean }) {
   const current = ans || {};
   const update = (key: string, value: any) => onAns({ ...current, [key]: value });
 
   return (
-    <div className="space-y-4">
-      {/* Log entries */}
-      <div className="bg-background border border-border rounded-md p-3 font-mono text-xs text-foreground overflow-x-auto">
-        {q.logEntries.map((entry, i) => (
-          <div key={i} className="py-0.5 whitespace-nowrap">{entry.line}</div>
-        ))}
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-border bg-[#1e1e1e] p-6 shadow-xl">
+        <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
+          <div className="w-3 h-3 rounded-full bg-destructive" />
+          <div className="w-3 h-3 rounded-full bg-warning" />
+          <div className="w-3 h-3 rounded-full bg-success" />
+          <span className="ml-2 text-[10px] font-mono text-white/40 font-bold uppercase tracking-widest">system_audit.log</span>
+        </div>
+        <div className="font-mono text-xs space-y-1 max-h-[250px] overflow-auto custom-scrollbar">
+          {q.logEntries.map((entry, i) => (
+            <div key={i} className="flex gap-4 hover:bg-white/5 py-0.5 group px-2 rounded">
+              <span className="text-white/20 select-none w-6 text-right group-hover:text-white/40">{i+1}</span>
+              <span className={`${entry.type === 'error' ? 'text-destructive' : entry.type === 'warning' ? 'text-warning' : 'text-white/70'}`}>
+                {entry.line}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Attack type */}
-      <div>
-        <label className="text-xs font-mono text-muted-foreground uppercase mb-1 block">1. Identify the attack type</label>
-        <select value={current.attackType || ''} onChange={e => update('attackType', e.target.value)} disabled={show}
-          className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md text-foreground">
-          <option value="">Select attack type...</option>
-          {q.attackTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-        {show && (
-          <div className={`text-xs mt-1 ${current.attackType === q.correctAttackType ? 'text-success' : 'text-destructive'}`}>
-            {current.attackType === q.correctAttackType ? '✓ Correct' : `✗ Correct: ${q.correctAttackType}`}
-          </div>
-        )}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">1. Attack Identification</label>
+          <select 
+            value={current.attackType || ''} 
+            onChange={e => update('attackType', e.target.value)}
+            disabled={show}
+            className="w-full px-4 py-3 text-sm bg-muted border border-border rounded-xl text-foreground focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
+          >
+            <option value="">Select attack type...</option>
+            {q.attackTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          {show && (
+            <div className={`mt-3 text-xs font-black uppercase tracking-tighter ${current.attackType === q.correctAttackType ? 'text-success' : 'text-destructive'}`}>
+              {current.attackType === q.correctAttackType ? '✓ Correct Identification' : `✗ Correct: ${q.correctAttackType}`}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">2. Source of Threat</label>
+          <select 
+            value={current.sourceIP || ''} 
+            onChange={e => update('sourceIP', e.target.value)}
+            disabled={show}
+            className="w-full px-4 py-3 text-sm bg-muted border border-border rounded-xl text-foreground focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
+          >
+            <option value="">Select source IP...</option>
+            {q.sourceIPOptions.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          {show && (
+            <div className={`mt-3 text-xs font-black uppercase tracking-tighter ${current.sourceIP === q.correctSourceIP ? 'text-success' : 'text-destructive'}`}>
+              {current.sourceIP === q.correctSourceIP ? '✓ Correct IP' : `✗ Correct: ${q.correctSourceIP}`}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Source IP */}
-      <div>
-        <label className="text-xs font-mono text-muted-foreground uppercase mb-1 block">2. Identify the source IP</label>
-        <select value={current.sourceIP || ''} onChange={e => update('sourceIP', e.target.value)} disabled={show}
-          className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md text-foreground">
-          <option value="">Select source IP...</option>
-          {q.sourceIPOptions.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-        {show && (
-          <div className={`text-xs mt-1 ${current.sourceIP === q.correctSourceIP ? 'text-success' : 'text-destructive'}`}>
-            {current.sourceIP === q.correctSourceIP ? '✓ Correct' : `✗ Correct: ${q.correctSourceIP}`}
-          </div>
-        )}
-      </div>
-
-      {/* Response */}
-      <div>
-        <label className="text-xs font-mono text-muted-foreground uppercase mb-1 block">3. Select the FIRST response action</label>
-        <div className="flex flex-col gap-2">
+      <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
+        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 block">3. Immediate Mitigation Action</label>
+        <div className="grid gap-3">
           {q.responseOptions.map((opt, i) => {
             const sel = current.response === i;
             const correct = i === q.correctResponse;
             let cls = 'bg-muted/50 border-border text-foreground hover:border-primary/40';
+            
             if (show && sel && correct) cls = 'bg-success/10 border-success text-success';
             else if (show && sel && !correct) cls = 'bg-destructive/10 border-destructive text-destructive';
             else if (show && !sel && correct) cls = 'bg-success/5 border-success/50 text-success';
             else if (sel) cls = 'bg-primary/10 border-primary text-foreground';
+
             return (
-              <button key={i} onClick={() => !show && update('response', i)} disabled={show}
-                className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm text-left transition-all ${cls}`}>
-                <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">{String.fromCharCode(65+i)}</span>
-                <span className="flex-1">{opt}</span>
+              <button
+                key={i}
+                onClick={() => !show && update('response', i)}
+                disabled={show}
+                className={`flex items-center gap-4 px-5 py-4 rounded-xl border text-sm text-left transition-all font-medium ${cls}`}
+              >
+                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-black text-xs ${sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground'}`}>
+                  {String.fromCharCode(65+i)}
+                </div>
+                {opt}
               </button>
             );
           })}
@@ -585,95 +742,78 @@ function LogAnalysisPBQ({ q, ans, onAns, show }: { q: PBQLogAnalysis; ans: any; 
   );
 }
 
-/* ===== Matching PBQ ===== */
-function MatchingPBQ({ q, ans, onAns, show }: { q: PBQMatching; ans: Record<string,string>; onAns: (a: Record<string,string>) => void; show: boolean }) {
+function MatchingPBQ({ q, ans, onAns, show }: { q: PBQMatching; ans: Record<string, string>; onAns: (a: Record<string, string>) => void; show: boolean }) {
   const [dragItem, setDragItem] = useState<string | null>(null);
-  const handleDrop = (right: string) => { if (!dragItem || show) return; onAns({...ans, [dragItem]: right}); setDragItem(null); };
-  const unassigned = q.items.filter(it => !Object.keys(ans).includes(it.left));
+  const handleDrop = (right: string) => {
+    if (!dragItem || show) return;
+    onAns({...ans, [dragItem]: right});
+    setDragItem(null);
+  };
+
+  const unassigned = q.items.filter(it => !Object.keys(ans || {}).includes(it.left));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-10">
       <div>
-        <h4 className="text-xs font-mono text-muted-foreground mb-3 uppercase tracking-wider">Items to match</h4>
-        <div className="flex flex-col gap-2">
+        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+          <GripVertical className="h-3 w-3" />
+          Available Items
+        </h4>
+        <div className="flex flex-wrap gap-3 p-6 rounded-2xl bg-muted/30 border-2 border-dashed border-border min-h-[80px]">
           {unassigned.map(it => (
-            <div key={it.left} draggable={!show} onDragStart={() => setDragItem(it.left)} onDragEnd={() => setDragItem(null)}
-              className={`draggable-item px-4 py-2 rounded-md border border-border bg-muted text-sm font-medium text-foreground ${dragItem === it.left ? 'dragging' : ''}`}>{it.left}</div>
+            <div
+              key={it.left}
+              draggable={!show}
+              onDragStart={() => setDragItem(it.left)}
+              onDragEnd={() => setDragItem(null)}
+              className={`px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold text-foreground shadow-sm transition-all ${
+                !show ? 'cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-md' : ''
+              } ${dragItem === it.left ? 'opacity-50 scale-95' : ''}`}
+            >
+              {it.left}
+            </div>
           ))}
-          {unassigned.length === 0 && !show && <p className="text-xs text-muted-foreground italic">All items assigned ✓</p>}
+          {unassigned.length === 0 && !show && <div className="text-xs font-bold text-success uppercase tracking-widest m-auto">All items assigned ✓</div>}
         </div>
       </div>
-      <div>
-        <h4 className="text-xs font-mono text-muted-foreground mb-3 uppercase tracking-wider">Categories</h4>
-        <div className="flex flex-col gap-3">
-          {q.rightOptions.map(right => {
-            const assigned = q.items.filter(it => ans[it.left] === right);
-            return (
-              <div key={right}
-                onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
-                onDragLeave={e => e.currentTarget.classList.remove('drag-over')}
-                onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); handleDrop(right); }}
-                className="drop-zone border-2 border-dashed border-border rounded-lg p-3 min-h-[50px]">
-                <p className="text-xs font-mono text-primary mb-2">{right}</p>
-                <div className="flex flex-wrap gap-1">
-                  {assigned.map(it => {
-                    const ok = show && it.correctRight === right;
-                    const bad = show && it.correctRight !== right;
-                    return (
-                      <span key={it.left} className={`px-2 py-1 rounded text-xs font-medium ${ok ? 'bg-success/20 text-success' : bad ? 'bg-destructive/20 text-destructive' : 'bg-card text-foreground border border-border'}`}>
-                        {it.left}
-                        {bad && <span className="ml-1 text-success font-mono text-[10px]">→ {it.correctRight}</span>}
-                        {!show && <button onClick={() => { const n = {...ans}; delete n[it.left]; onAns(n); }} className="ml-1 text-muted-foreground hover:text-foreground">×</button>}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-/* ===== Placement PBQ ===== */
-function PlacementPBQ({ q, ans, onAns, show }: { q: PBQPlacement; ans: Record<string,string>; onAns: (a: Record<string,string>) => void; show: boolean }) {
-  const [dragItem, setDragItem] = useState<string | null>(null);
-  const handleDrop = (zone: string) => { if (!dragItem || show) return; onAns({...ans, [dragItem]: zone}); setDragItem(null); };
-  const unassigned = q.items.filter(it => !Object.keys(ans).includes(it.label));
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Items to place</h4>
-        <div className="flex flex-wrap gap-2">
-          {unassigned.map(it => (
-            <div key={it.label} draggable={!show} onDragStart={() => setDragItem(it.label)} onDragEnd={() => setDragItem(null)}
-              className={`draggable-item px-3 py-1.5 rounded-md border border-border bg-muted text-xs font-medium text-foreground ${dragItem === it.label ? 'dragging' : ''}`}>{it.label}</div>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {q.zones.map(zone => {
-          const here = q.items.filter(it => ans[it.label] === zone);
+      <div className="grid gap-6 sm:grid-cols-2">
+        {q.rightOptions.map(right => {
+          const assigned = q.items.filter(it => ans?.[it.left] === right);
           return (
-            <div key={zone}
-              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
-              onDragLeave={e => e.currentTarget.classList.remove('drag-over')}
-              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); handleDrop(zone); }}
-              className="drop-zone border-2 border-dashed border-border rounded-lg p-3 min-h-[80px]">
-              <p className="text-xs font-mono text-accent mb-2 font-bold">{zone}</p>
-              <div className="flex flex-col gap-1">
-                {here.map(it => {
-                  const ok = show && it.correctZone === zone;
-                  const bad = show && it.correctZone !== zone;
+            <div 
+              key={right}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/5', 'border-primary/50'); }}
+              onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); }}
+              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); handleDrop(right); }}
+              className="group border-2 border-border rounded-2xl p-5 min-h-[120px] transition-all bg-card hover:shadow-lg"
+            >
+              <h5 className="text-xs font-black uppercase tracking-widest text-primary mb-4 border-b border-primary/10 pb-2">{right}</h5>
+              <div className="space-y-2">
+                {assigned.map(it => {
+                  const ok = show && it.correctRight === right;
+                  const bad = show && it.correctRight !== right;
                   return (
-                    <span key={it.label} className={`px-2 py-1 rounded text-xs ${ok ? 'bg-success/20 text-success' : bad ? 'bg-destructive/20 text-destructive' : 'bg-card text-foreground border border-border'}`}>
-                      {it.label}
-                      {bad && <span className="ml-1 text-success font-mono text-[10px]">→ {it.correctZone}</span>}
-                      {!show && <button onClick={() => { const n = {...ans}; delete n[it.label]; onAns(n); }} className="ml-1 text-muted-foreground hover:text-foreground">×</button>}
-                    </span>
+                    <div key={it.left} className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      ok ? 'bg-success/10 border-success/50 text-success' : 
+                      bad ? 'bg-destructive/10 border-destructive/50 text-destructive' : 
+                      'bg-muted/50 border-border'
+                    }`}>
+                      {it.left}
+                      {!show && (
+                        <button 
+                          onClick={() => {
+                            const n = {...ans};
+                            delete n[it.left];
+                            onAns(n);
+                          }}
+                          className="p-1 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {ok && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    </div>
                   );
                 })}
               </div>
@@ -684,3 +824,84 @@ function PlacementPBQ({ q, ans, onAns, show }: { q: PBQPlacement; ans: Record<st
     </div>
   );
 }
+
+function PlacementPBQ({ q, ans, onAns, show }: { q: PBQPlacement; ans: Record<string, string>; onAns: (a: Record<string, string>) => void; show: boolean }) {
+  const [dragItem, setDragItem] = useState<string | null>(null);
+  const handleDrop = (zone: string) => {
+    if (!dragItem || show) return;
+    onAns({...ans, [dragItem]: zone});
+    setDragItem(null);
+  };
+
+  const unassigned = q.items.filter(it => !Object.keys(ans || {}).includes(it.label));
+
+  return (
+    <div className="space-y-10">
+      <div>
+        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+          <GripVertical className="h-3 w-3" />
+          Components to Place
+        </h4>
+        <div className="flex flex-wrap gap-2 p-6 rounded-2xl bg-muted/30 border-2 border-dashed border-border min-h-[80px]">
+          {unassigned.map(it => (
+            <div
+              key={it.label}
+              draggable={!show}
+              onDragStart={() => setDragItem(it.label)}
+              onDragEnd={() => setDragItem(null)}
+              className={`px-3 py-1.5 rounded-lg border border-border bg-card text-[10px] font-black text-foreground shadow-sm transition-all ${
+                !show ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' : ''
+              } ${dragItem === it.label ? 'opacity-50 scale-95' : ''}`}
+            >
+              {it.label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+        {q.zones.map(zone => {
+          const here = q.items.filter(it => ans?.[it.label] === zone);
+          return (
+            <div 
+              key={zone}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/5', 'border-primary/50'); }}
+              onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); }}
+              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); handleDrop(zone); }}
+              className="border-2 border-border border-dashed rounded-2xl p-5 min-h-[140px] transition-all bg-card/50 flex flex-col"
+            >
+              <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2 text-center">{zone}</h5>
+              <div className="flex-1 flex flex-col gap-2">
+                {here.map(it => {
+                  const ok = show && it.correctZone === zone;
+                  const bad = show && it.correctZone !== zone;
+                  return (
+                    <div key={it.label} className={`flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-black border transition-all ${
+                      ok ? 'bg-success/10 border-success/50 text-success' : 
+                      bad ? 'bg-destructive/10 border-destructive/50 text-destructive' : 
+                      'bg-card border-border shadow-sm'
+                    }`}>
+                      {it.label}
+                      {!show && (
+                        <button onClick={() => {
+                          const n = {...ans};
+                          delete n[it.label];
+                          onAns(n);
+                        }} className="text-muted-foreground hover:text-destructive">
+                          <XCircle className="h-3 w-3" />
+                        </button>
+                      )}
+                      {ok && <CheckCircle2 className="h-3 w-3" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+import type { PBQFirewall, PBQOrdering, PBQLogAnalysis, PBQMatching, PBQPlacement } from '@/data/questions';
