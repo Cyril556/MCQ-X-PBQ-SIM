@@ -13,11 +13,12 @@ interface NewExamEngineProps {
   pbqs: PBQuestion[];
   mcqs: MCQuestion[];
   durationMinutes: number;
+    examNumber?: 1 | 2 | 3;
   isStudyMode?: boolean;
   onFinish: () => void;
 }
 
-export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false, onFinish }: NewExamEngineProps) {
+export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false, examNumber = 1, onFinish }: NewExamEngineProps) {
   const questions = useMemo<UnifiedQ[]>(() => [
     ...pbqs.map(q => ({ kind: 'pbq' as const, data: q })),
     ...mcqs.map(q => ({ kind: 'mcq' as const, data: q })),
