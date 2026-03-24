@@ -12,8 +12,8 @@ const Index = () => {
   const [examData, setExamData] = useState<ReturnType<typeof buildExam> | null>(null);
   const [studyQuestions, setStudyQuestions] = useState<ReturnType<typeof buildStudyQuestions>>([]);
 
-  const handleStartExam = () => {
-    const exam = buildExam();
+  const handleStartExam = (examNumber: 1 | 2 | 3 = 1) => {
+    const exam = buildExam(examNumber);
     setExamData(exam);
     setView('exam');
   };
@@ -28,6 +28,7 @@ const Index = () => {
       <NewExamEngine
         pbqs={examData.pbqs}
         mcqs={examData.mcqs}
+        examNumber={examData.examNumber}
         durationMinutes={90}
         onFinish={() => { setExamData(null); setView('start'); }}
       />
