@@ -41,6 +41,9 @@ export interface QuestionStats {
   avgTimeSeconds: number;
   lastAttempt: number;
   streak: number; // positive = consecutive correct, negative = consecutive wrong
+  explanation: string;       // ← added: latest explanation for review dialog
+  userAnswer: string;        // ← added: last user answer for review dialog
+  correctAnswer: string;     // ← added: correct answer for review dialog
 }
 
 const HISTORY_KEY = 'secplus-exam-history';
@@ -81,6 +84,9 @@ function updateQuestionStats(questions: QuestionAttempt[]): void {
       avgTimeSeconds: 0,
       lastAttempt: 0,
       streak: 0,
+      explanation: '',
+      userAnswer: '',
+      correctAnswer: '',
     };
     existing.timesAttempted++;
     if (q.isCorrect) {
@@ -97,6 +103,10 @@ function updateQuestionStats(questions: QuestionAttempt[]): void {
     existing.lastAttempt = q.timestamp;
     existing.questionText = q.questionText;
     existing.domain = q.domain;
+    // Always update these so review shows the latest attempt's data
+    existing.explanation = q.explanation;
+    existing.userAnswer = q.userAnswer;
+    existing.correctAnswer = q.correctAnswer;
     stats[q.questionId] = existing;
   });
   localStorage.setItem(STATS_KEY, JSON.stringify(stats));
