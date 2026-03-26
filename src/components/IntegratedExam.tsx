@@ -731,19 +731,47 @@ function PlacementRenderer({ q, ans, onAns, sub }: { q: PBQQuestion; ans: Record
 function OrderingRenderer({ q, ans, onAns, sub }: { q: PBQQuestion; ans: string[]; onAns: (a: string[]) => void; sub: boolean }) {
   const items = q.orderItems || [];
   const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const currentOrder: string[] = ans.length > 0 ? ans : items.map(it => it.step).sort(() => Math.random() - 0.5);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
+
+  // Initialize shuffled order once via useMemo to avoid re-shuffling on every render
+  const initialOrder = useMemo(
+    () => items.map(it => it.step).sort(() => Math.random() - 0.5),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [q.id]
+  );
+
+  const currentOrder: string[] = ans.length > 0 ? ans : initialOrder;
 
   if (ans.length === 0 && items.length > 0) {
     setTimeout(() => onAns(currentOrder), 0);
   }
 
-  const handleDrop = (targetIdx: number) => {
-    if (dragIdx === null || sub) return;
+  const handleDragStart = (idx: number) => {
+    setDragIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDropTargetIdx(idx);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    setDropTargetIdx(null);
+    if (dragIdx === null || dragIdx === targetIdx || sub) {
+      setDragIdx(null);
+      return;
+    }
     const next = [...currentOrder];
     const [moved] = next.splice(dragIdx, 1);
     next.splice(targetIdx, 0, moved);
     onAns(next);
     setDragIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIdx(null);
+    setDropTargetIdx(null);
   };
 
   return (
@@ -753,17 +781,30 @@ function OrderingRenderer({ q, ans, onAns, sub }: { q: PBQQuestion; ans: string[
         const ci = items.find(it => it.step === step);
         const ok = sub && ci && ci.correctPosition === idx;
         const bad = sub && ci && ci.correctPosition !== idx;
+        const isDragging = dragIdx === idx;
+        const isDropTarget = dropTargetIdx === idx && dragIdx !== null && dragIdx !== idx;
         return (
-          <div key={step} draggable={!sub} onDragStart={() => setDragIdx(idx)} onDragEnd={() => setDragIdx(null)}
-            onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); handleDrop(idx); }}
+          <div
+            key={step}
+            draggable={!sub}
+            onDragStart={() => handleDragStart(idx)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDragLeave={() => setDropTargetIdx(null)}
+            onDrop={(e) => handleDrop(e, idx)}
             className={`flex items-center gap-3 px-4 py-3 rounded-md border text-sm transition-all ${
-              ok ? 'bg-success/10 border-success text-success' : bad ? 'bg-destructive/10 border-destructive text-destructive' : dragIdx === idx ? 'border-accent bg-accent/10 opacity-50' : 'border-border bg-muted text-foreground'
-            } ${!sub ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+              ok ? 'bg-success/10 border-success text-success'
+              : bad ? 'bg-destructive/10 border-destructive text-destructive'
+              : isDropTarget ? 'border-accent bg-accent/20 scale-[1.02]'
+              : isDragging ? 'border-accent bg-accent/10 opacity-40'
+              : 'border-border bg-muted text-foreground'
+            } ${!sub ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          >
             <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold">{idx + 1}</span>
+            <span className="flex-shrink-0 w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-bold">{idx + 1}</span>
             <span className="flex-1">{step}</span>
             {ok && <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />}
-            {bad && ci && <span className="flex items-center gap-1"><XCircle className="h-4 w-4 text-destructive" /><span className="text-xs text-success font-mono">#{ci.correctPosition + 1}</span></span>}
+            {bad && ci && <span className="flex items-center gap-1"><XCircle className="h-4 w-4 text-destructive" /> #{ci.correctPosition + 1}</span>}
           </div>
         );
       })}
