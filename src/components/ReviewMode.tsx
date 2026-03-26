@@ -191,6 +191,13 @@ function QuestionStatsCard({ stats }: { stats: QuestionStats }) {
                   <span className="text-foreground">{stats.correctAnswer}</span>
                 </div>
               )}
+              
+        {stats.explanation && (
+          <div>
+            <span className="font-semibold text-blue-400">Explanation: </span>
+            <span className="text-foreground">{stats.explanation}</span>
+          </div>
+        )}
             </div>
           </div>
         </div>
