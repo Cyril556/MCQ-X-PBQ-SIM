@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { PBQQuestion } from '@/data/pbq';
+import { LogicCheck, type LogicCheckQuestion } from '@/components/LogicCheck';
 import { MCQItem } from '@/data/mcq';
 import { FeedbackDialog, FeedbackItem } from '@/components/FeedbackDialog';
 import { ExamTimer, QuestionStopwatch } from '@/components/ExamTimer';
@@ -59,6 +60,8 @@ export function IntegratedExam({ examId, examLabel, pbqQuestions, mcqQuestions, 
   const [flags, setFlags] = useState<Set<string>>(new Set());
   const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showLogicCheck, setShowLogicCheck] = useState(false);
+  const [logicCheckQuestions, setLogicCheckQuestions] = useState<LogicCheckQuestion[]>([]);
   const [showNav, setShowNav] = useState(false);
   const [startTime] = useState(Date.now());
   const [questionTimes, setQuestionTimes] = useState<Record<string, number>>({});
@@ -164,6 +167,30 @@ export function IntegratedExam({ examId, examLabel, pbqQuestions, mcqQuestions, 
       domainScores,
     };
     saveAttempt(attempt);
+
+    // Build Logic Check questions for wrong MCQ answers only
+    const lcqs: LogicCheckQuestion[] = questions
+      .filter(q => q.kind === 'mcq')
+      .filter(q => {
+        const ans = mcqAnswers[q.data.id];
+        return ans !== undefined && !isMCQCorrect(q.data, ans);
+      })
+      .map(q => {
+        const mcq = q.data;
+        const ans = mcqAnswers[mcq.id] as number | number[];
+        const correctIdx = mcq.type === 'single' ? mcq.answer as number : (mcq.answer as number[])[0];
+        const userIdx = mcq.type === 'single' ? ans as number : (ans as number[])[0];
+        return {
+          questionId: mcq.id,
+          questionText: mcq.question,
+          options: mcq.options,
+          correctIndex: correctIdx,
+          userIndex: userIdx,
+          explanation: mcq.explanation,
+          domain: mcq.domain,
+        };
+      });
+    if (lcqs.length > 0) setLogicCheckQuestions(lcqs);
   };
 
   const handleTimerExpire = () => {
@@ -224,7 +251,15 @@ export function IntegratedExam({ examId, examLabel, pbqQuestions, mcqQuestions, 
         items={feedbackItems}
         score={score}
         total={questions.length}
+              onLogicCheck={logicCheckQuestions.length > 0 ? () => setShowLogicCheck(true) : undefined}
       />
+            {showLogicCheck && (
+        <LogicCheck
+          questions={logicCheckQuestions}
+          onComplete={() => { setShowLogicCheck(false); setLogicCheckQuestions([]); }}
+          onSkip={() => { setShowLogicCheck(false); setLogicCheckQuestions([]); }}
+        />
+      )}
 
       {/* Exam header bar */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
