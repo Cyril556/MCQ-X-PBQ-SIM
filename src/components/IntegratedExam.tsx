@@ -38,11 +38,20 @@ function isMCQCorrect(q: MCQItem, ans: number | number[] | undefined): boolean {
 }
 
 export function IntegratedExam({ examId, examLabel, pbqQuestions, mcqQuestions, durationMinutes, onFinish }: IntegratedExamProps) {
-  // Build unified question list: PBQs first, then MCQs (like real exam)
-  const questions = useMemo<UnifiedQuestion[]>(() => [
-    ...pbqQuestions.map(q => ({ kind: 'pbq' as const, data: q })),
-    ...mcqQuestions.map(q => ({ kind: 'mcq' as const, data: q })),
-  ], [pbqQuestions, mcqQuestions]);
+    // Randomly interleave PBQs throughout MCQs (realistic exam behavior)
+  const questions = useMemo<UnifiedQuestion[]>(() => {
+    const pbqList = pbqQuestions.map(q => ({ kind: 'pbq' as const, data: q }));
+    const mcqList = mcqQuestions.map(q => ({ kind: 'mcq' as const, data: q }));
+    const combined: UnifiedQuestion[] = [...mcqList];
+    
+    // Insert PBQs at random positions throughout the exam
+    pbqList.forEach(pbq => {
+      const randomIndex = Math.floor(Math.random() * (combined.length + 1));
+      combined.splice(randomIndex, 0, pbq);
+    });
+    
+    return combined;
+  }, [pbqQuestions, mcqQuestions]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [pbqAnswers, setPbqAnswers] = useState<Record<string, any>>({});
