@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-    base: '/MCQ-X-PBQ-SIM/',
+        base: '/',
   server: {
     host: "::",
     port: 8080,
