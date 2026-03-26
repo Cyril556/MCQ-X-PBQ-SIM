@@ -586,8 +586,10 @@ function FirewallPBQ({ q, ans, onAns, show }: { q: PBQFirewall; ans: string[]; o
 
 function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; onAns: (a: string[]) => void; show: boolean }) {
   const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const currentOrder = ans?.length > 0 ? ans : q.steps.map(s => s.label).sort(() => Math.random() - 0.5);
-  
+    const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
+    const initialOrder = useMemo(() => q.steps.map(s => s.label).sort(() => Math.random() - 0.5), [q.id]);
+
+    const currentOrder: string[] = ans?.length > 0 ? ans : initialOrder;
   if (!ans?.length && q.steps.length > 0) {
     setTimeout(() => onAns(currentOrder), 0);
   }
@@ -599,6 +601,7 @@ function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; o
     next.splice(targetIdx, 0, moved);
     onAns(next);
     setDragIdx(null);
+        setDropTargetIdx(null);
   };
 
   return (
@@ -617,12 +620,14 @@ function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; o
             key={step}
             draggable={!show}
             onDragStart={() => setDragIdx(i)}
-            onDragEnd={() => setDragIdx(null)}
-            onDragOver={e => e.preventDefault()}
+                        onDragEnd={() => { setDragIdx(null); setDropTargetIdx(null); }}
+                        onDragOver={e => { e.preventDefault(); setDropTargetIdx(i); }}
+                        onDragLeave={() => setDropTargetIdx(null)}
             onDrop={e => { e.preventDefault(); handleDrop(i); }}
             className={`flex items-center gap-4 px-5 py-4 rounded-2xl border text-sm transition-all shadow-sm ${
               ok ? 'bg-success/10 border-success text-success' :
               bad ? 'bg-destructive/10 border-destructive text-destructive' :
+                              dropTargetIdx === i && dragIdx !== i ? 'border-accent bg-accent/20 scale-[1.02]' :
               dragIdx === i ? 'border-primary bg-primary/5 opacity-50 scale-95' :
               'border-border bg-card text-foreground hover:border-primary/40'
             } ${!show ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : ''}`}
