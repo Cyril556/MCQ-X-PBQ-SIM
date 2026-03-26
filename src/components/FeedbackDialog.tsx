@@ -8,6 +8,9 @@ export interface FeedbackItem {
   userAnswer: string;
   correctAnswer: string;
   explanation: string;
+    options?: string[];
+  correctIndex?: number;
+  userIndex?: number;
 }
 
 interface FeedbackDialogProps {
@@ -17,9 +20,10 @@ interface FeedbackDialogProps {
   items: FeedbackItem[];
   score: number;
   total: number;
+    onLogicCheck?: () => void;
 }
 
-export function FeedbackDialog({ open, onClose, title, items, score, total }: FeedbackDialogProps) {
+export function FeedbackDialog({ open, onClose, title, items, score, total , onLogicCheck }: FeedbackDialogProps){
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const passed = pct >= 75;
 
@@ -85,8 +89,16 @@ export function FeedbackDialog({ open, onClose, title, items, score, total }: Fe
         </ScrollArea>
 
         {/* Footer */}
-        <div className="border-t border-border px-6 py-4 flex justify-end">
-          <button
+        <div className="border-t border-border px-6 py-4 flex justify-between">
+{onLogicCheck && (
+              <button
+                onClick={() => { onClose(); onLogicCheck(); }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-all"
+              >
+                🧠 Logic Check
+              </button>
+            )}
+                      <button
             onClick={onClose}
             className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
           >
