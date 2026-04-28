@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play } from 'lucide-react';
+import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play, Shuffle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { MCQuestion, PBQuestion } from '@/data/questions';
 import { isMCQCorrect, isPBQCorrect, calculateScore, type ScoreResult } from '@/lib/examEngine';
