@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play } from 'lucide-react';
+import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play, Shuffle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { MCQuestion, PBQuestion } from '@/data/questions';
 import { isMCQCorrect, isPBQCorrect, calculateScore, type ScoreResult } from '@/lib/examEngine';
@@ -19,33 +19,37 @@ interface NewExamEngineProps {
 }
 
 export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false, examNumber = 1, onFinish }: NewExamEngineProps) {
+  // Bumped by the Shuffle button to re-randomize question order + MCQ option order.
+  const [shuffleNonce, setShuffleNonce] = useState(0);
+
   // Unified question stream: interleave PBQs at non-consecutive random positions.
   // PBQs are scattered throughout the exam (not grouped at the start) and never
-  // placed adjacent to another PBQ. Re-shuffles only when the underlying pools change.
+  // placed adjacent to another PBQ. Re-shuffles when shuffleNonce changes.
   const questions = useMemo<UnifiedQ[]>(() => {
-    const mcqItems: UnifiedQ[] = mcqs.map(q => ({ kind: 'mcq' as const, data: q }));
-    const pbqItems: UnifiedQ[] = pbqs.map(q => ({ kind: 'pbq' as const, data: q }));
+    // Shuffle MCQ order so the same questions appear in a new sequence each time.
+    const shuffledMcqs = [...mcqs].sort(() => Math.random() - 0.5);
+    const shuffledPbqs = [...pbqs].sort(() => Math.random() - 0.5);
+
+    const mcqItems: UnifiedQ[] = shuffledMcqs.map(q => ({ kind: 'mcq' as const, data: q }));
+    const pbqItems: UnifiedQ[] = shuffledPbqs.map(q => ({ kind: 'pbq' as const, data: q }));
 
     if (pbqItems.length === 0) return mcqItems;
     if (mcqItems.length === 0) return pbqItems;
 
     const total = mcqItems.length + pbqItems.length;
-    // Build a list of candidate slot indices, enforcing non-consecutive PBQ placement
-    // and avoiding the very first slot so the user starts on an MCQ when possible.
     const minGap = Math.max(2, Math.floor(mcqItems.length / pbqItems.length));
     const positions: number[] = [];
     const used = new Set<number>();
     let attempts = 0;
     while (positions.length < pbqItems.length && attempts < 500) {
       attempts++;
-      const candidate = 1 + Math.floor(Math.random() * (total - 2)); // skip first & last
+      const candidate = 1 + Math.floor(Math.random() * (total - 2));
       if (used.has(candidate)) continue;
       const tooClose = positions.some(p => Math.abs(p - candidate) < minGap);
       if (tooClose) continue;
       positions.push(candidate);
       used.add(candidate);
     }
-    // Fallback: if random failed, evenly distribute
     if (positions.length < pbqItems.length) {
       positions.length = 0;
       const step = Math.floor(total / (pbqItems.length + 1));
@@ -66,7 +70,8 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
       }
     }
     return out;
-  }, [pbqs, mcqs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pbqs, mcqs, shuffleNonce]);
 
   const [idx, setIdx] = useState(0);
   const [pbqAnswers, setPbqAnswers] = useState<Record<string, any>>({});
@@ -216,6 +221,19 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
     setIdx(newIdx);
   };
 
+  const handleShuffle = () => {
+    // Reshuffle question order + reset progress so the new order isn't mixed with
+    // partially-answered state from the previous order.
+    if (!confirm('Shuffle questions? This will clear your current answers and flags.')) return;
+    setShuffleNonce(n => n + 1);
+    setIdx(0);
+    setPbqAnswers({});
+    setMcqAnswers({});
+    setFlags(new Set());
+    setQuestionTimes({});
+    setQStartTime(Date.now());
+  };
+
   const toggleFlag = () => {
     setFlags(prev => {
       const n = new Set(prev);
@@ -293,9 +311,16 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={handleShuffle}
+            className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted transition-all text-muted-foreground hover:text-foreground group"
+            title="Shuffle questions"
+          >
+            <Shuffle className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+          </button>
           {!isStudyMode && !submitted && (
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={togglePause}
                 className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted transition-all text-muted-foreground hover:text-foreground group"
                 title="Pause Exam"
@@ -474,28 +499,48 @@ function MCQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: MCQuestio
           const sel = isSelected(i);
           const correct = isCorrectOpt(i);
           let cls = 'bg-card border-border text-foreground hover:border-primary/40 hover:bg-muted/30';
-          
+
           if (showFeedback && sel && correct) cls = 'bg-success/10 border-success text-success';
           else if (showFeedback && sel && !correct) cls = 'bg-destructive/10 border-destructive text-destructive';
           else if (showFeedback && !sel && correct) cls = 'bg-success/5 border-success/50 text-success';
           else if (sel) cls = 'bg-primary/5 border-primary shadow-[0_0_0_1px_rgba(var(--primary),0.1)]';
 
+          // Per-option explanation: show why this distractor is wrong, or confirm correct.
+          const perOptionNote = showFeedback
+            ? (correct
+                ? 'Correct answer — see full explanation below.'
+                : (q.whyWrong?.[i] ?? 'Incorrect — this option does not match the scenario described.'))
+            : null;
+
           return (
-            <button
-              key={i}
-              onClick={() => handleSelect(i)}
-              disabled={showFeedback}
-              className={`flex items-start gap-4 px-5 py-4 rounded-2xl border text-sm text-left transition-all duration-200 group ${cls}`}
-            >
-              <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-xs transition-colors ${
-                sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground group-hover:border-primary/40'
-              }`}>
-                {String.fromCharCode(65+i)}
-              </div>
-              <span className="flex-1 leading-relaxed">{opt}</span>
-              {showFeedback && sel && correct && <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />}
-              {showFeedback && sel && !correct && <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
-            </button>
+            <div key={i}>
+              <button
+                onClick={() => handleSelect(i)}
+                disabled={showFeedback}
+                className={`w-full flex items-start gap-4 px-5 py-4 rounded-2xl border text-sm text-left transition-all duration-200 group ${cls}`}
+              >
+                <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-xs transition-colors ${
+                  sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground group-hover:border-primary/40'
+                }`}>
+                  {String.fromCharCode(65+i)}
+                </div>
+                <span className="flex-1 leading-relaxed">{opt}</span>
+                {showFeedback && correct && <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />}
+                {showFeedback && sel && !correct && <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
+              </button>
+              {perOptionNote && (
+                <div className={`mt-1.5 ml-4 px-4 py-2 text-xs leading-relaxed rounded-lg border-l-2 ${
+                  correct
+                    ? 'border-success/60 bg-success/5 text-success'
+                    : 'border-destructive/40 bg-muted/40 text-muted-foreground'
+                }`}>
+                  <span className="font-bold uppercase tracking-wider text-[9px] mr-2">
+                    {correct ? 'Why correct' : 'Why wrong'}
+                  </span>
+                  {perOptionNote}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
