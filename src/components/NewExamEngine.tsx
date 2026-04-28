@@ -499,28 +499,48 @@ function MCQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: MCQuestio
           const sel = isSelected(i);
           const correct = isCorrectOpt(i);
           let cls = 'bg-card border-border text-foreground hover:border-primary/40 hover:bg-muted/30';
-          
+
           if (showFeedback && sel && correct) cls = 'bg-success/10 border-success text-success';
           else if (showFeedback && sel && !correct) cls = 'bg-destructive/10 border-destructive text-destructive';
           else if (showFeedback && !sel && correct) cls = 'bg-success/5 border-success/50 text-success';
           else if (sel) cls = 'bg-primary/5 border-primary shadow-[0_0_0_1px_rgba(var(--primary),0.1)]';
 
+          // Per-option explanation: show why this distractor is wrong, or confirm correct.
+          const perOptionNote = showFeedback
+            ? (correct
+                ? 'Correct answer — see full explanation below.'
+                : (q.whyWrong?.[i] ?? 'Incorrect — this option does not match the scenario described.'))
+            : null;
+
           return (
-            <button
-              key={i}
-              onClick={() => handleSelect(i)}
-              disabled={showFeedback}
-              className={`flex items-start gap-4 px-5 py-4 rounded-2xl border text-sm text-left transition-all duration-200 group ${cls}`}
-            >
-              <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-xs transition-colors ${
-                sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground group-hover:border-primary/40'
-              }`}>
-                {String.fromCharCode(65+i)}
-              </div>
-              <span className="flex-1 leading-relaxed">{opt}</span>
-              {showFeedback && sel && correct && <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />}
-              {showFeedback && sel && !correct && <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
-            </button>
+            <div key={i}>
+              <button
+                onClick={() => handleSelect(i)}
+                disabled={showFeedback}
+                className={`w-full flex items-start gap-4 px-5 py-4 rounded-2xl border text-sm text-left transition-all duration-200 group ${cls}`}
+              >
+                <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-bold text-xs transition-colors ${
+                  sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground group-hover:border-primary/40'
+                }`}>
+                  {String.fromCharCode(65+i)}
+                </div>
+                <span className="flex-1 leading-relaxed">{opt}</span>
+                {showFeedback && correct && <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />}
+                {showFeedback && sel && !correct && <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />}
+              </button>
+              {perOptionNote && (
+                <div className={`mt-1.5 ml-4 px-4 py-2 text-xs leading-relaxed rounded-lg border-l-2 ${
+                  correct
+                    ? 'border-success/60 bg-success/5 text-success'
+                    : 'border-destructive/40 bg-muted/40 text-muted-foreground'
+                }`}>
+                  <span className="font-bold uppercase tracking-wider text-[9px] mr-2">
+                    {correct ? 'Why correct' : 'Why wrong'}
+                  </span>
+                  {perOptionNote}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
