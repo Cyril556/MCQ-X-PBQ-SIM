@@ -221,6 +221,19 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
     setIdx(newIdx);
   };
 
+  const handleShuffle = () => {
+    // Reshuffle question order + reset progress so the new order isn't mixed with
+    // partially-answered state from the previous order.
+    if (!confirm('Shuffle questions? This will clear your current answers and flags.')) return;
+    setShuffleNonce(n => n + 1);
+    setIdx(0);
+    setPbqAnswers({});
+    setMcqAnswers({});
+    setFlags(new Set());
+    setQuestionTimes({});
+    setQStartTime(Date.now());
+  };
+
   const toggleFlag = () => {
     setFlags(prev => {
       const n = new Set(prev);
@@ -298,9 +311,16 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={handleShuffle}
+            className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted transition-all text-muted-foreground hover:text-foreground group"
+            title="Shuffle questions"
+          >
+            <Shuffle className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+          </button>
           {!isStudyMode && !submitted && (
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={togglePause}
                 className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted transition-all text-muted-foreground hover:text-foreground group"
                 title="Pause Exam"
