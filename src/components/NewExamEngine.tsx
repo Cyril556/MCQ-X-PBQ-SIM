@@ -75,8 +75,6 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const [submitted, setSubmitted] = useState(false);
   const [showNav, setShowNav] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
-  const [showPBQLockWarning, setShowPBQLockWarning] = useState(false);
-  const [pbqLocked, setPbqLocked] = useState(false);
   
   const [isPaused, setIsPaused] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
