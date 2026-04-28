@@ -89,7 +89,7 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
 
   const cur = questions[idx];
   const qId = cur.kind === 'pbq' ? cur.data.id : cur.data.id;
-  const isPBQSection = idx < pbqs.length;
+  // (PBQs are interleaved throughout `questions` — no section concept.)
 
   // Timer logic with Pause
   useEffect(() => {
@@ -212,19 +212,8 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
 
   const goTo = (newIdx: number) => {
     if (isPaused) return;
-    // PBQ lock check
-    if (!pbqLocked && isPBQSection && newIdx >= pbqs.length) {
-      setShowPBQLockWarning(true);
-      return;
-    }
-    if (pbqLocked && newIdx < pbqs.length) return; 
+    if (newIdx < 0 || newIdx >= questions.length) return;
     setIdx(newIdx);
-  };
-
-  const confirmLeavePBQ = () => {
-    setPbqLocked(true);
-    setShowPBQLockWarning(false);
-    setIdx(pbqs.length);
   };
 
   const toggleFlag = () => {
@@ -286,21 +275,7 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
         </DialogContent>
       </Dialog>
 
-      {/* PBQ Lock Warning */}
-      <Dialog open={showPBQLockWarning} onOpenChange={setShowPBQLockWarning}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Leaving PBQ Section</DialogTitle>
-            <DialogDescription>
-              You are leaving the Performance-Based Questions section. You **cannot return** to these questions. Continue?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
-            <button onClick={() => setShowPBQLockWarning(false)} className="px-4 py-2 rounded-md border border-border text-sm">Stay in PBQs</button>
-            <button onClick={confirmLeavePBQ} className="px-4 py-2 rounded-md bg-accent text-accent-foreground font-bold text-sm">Continue to MCQs</button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* PBQ section gate removed — exam is one continuous queue. */}
 
       {/* Header Bar */}
       <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
@@ -312,9 +287,8 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
           <div className="h-8 w-[1px] bg-border mx-2 hidden sm:block" />
           <div className="hidden sm:flex items-center gap-2">
             <span className={`px-2 py-1 rounded text-[10px] font-black tracking-tighter ${cur.kind === 'pbq' ? 'bg-accent text-accent-foreground' : 'bg-primary/10 text-primary'}`}>
-              {cur.kind === 'pbq' ? 'PBQ' : cur.data.type === 'select-two' ? 'SELECT TWO' : 'MCQ'}
+              {cur.kind === 'pbq' ? 'PERFORMANCE-BASED' : cur.data.type === 'select-two' ? 'SELECT TWO' : 'MULTIPLE CHOICE'}
             </span>
-            {pbqLocked && isPBQSection && <span className="text-[10px] font-bold text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> LOCKED</span>}
           </div>
         </div>
 
@@ -362,26 +336,27 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
               <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-12 gap-2">
                 {questions.map((q, i) => {
                   const id = q.kind === 'pbq' ? q.data.id : q.data.id;
-                  const answered = q.kind === 'pbq' 
+                  const answered = q.kind === 'pbq'
                     ? (pbqAnswers[id] && (Array.isArray(pbqAnswers[id]) ? pbqAnswers[id].some((a: any) => a !== '') : typeof pbqAnswers[id] === 'object' && Object.keys(pbqAnswers[id]).length > 0))
                     : mcqAnswers[id] !== undefined;
                   const flagged = flags.has(id);
-                  const locked = pbqLocked && i < pbqs.length;
-                  
+                  const isPBQ = q.kind === 'pbq';
+
                   return (
                     <button
                       key={i}
-                      onClick={() => !locked && goTo(i)}
-                      disabled={locked}
+                      onClick={() => goTo(i)}
+                      title={isPBQ ? `Q${i + 1} — Performance-Based` : `Q${i + 1}`}
                       className={`relative aspect-square rounded-lg text-xs font-mono font-black transition-all ${
                         i === idx ? 'bg-primary text-primary-foreground scale-110 shadow-lg z-10' :
-                        locked ? 'bg-muted/30 text-muted-foreground/20 cursor-not-allowed opacity-50' :
-                        answered ? 'bg-primary/10 text-primary border-2 border-primary/20' :
+                        answered ? (isPBQ ? 'bg-accent/15 text-accent border-2 border-accent/40' : 'bg-primary/10 text-primary border-2 border-primary/20') :
+                        isPBQ ? 'bg-card text-foreground border-2 border-accent/40 hover:border-accent' :
                         'bg-card text-muted-foreground border border-border hover:border-primary/50'
                       }`}
                     >
                       {i + 1}
-                      {flagged && <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full border-2 border-card" />}
+                      {isPBQ && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-accent" />}
+                      {flagged && <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full border-2 border-card" />}
                     </button>
                   );
                 })}
@@ -431,7 +406,7 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
       <div className="bg-card border-t border-border px-4 py-4 sm:px-10 flex items-center justify-between">
         <button 
           onClick={() => goTo(Math.max(0, idx - 1))} 
-          disabled={idx === 0 || (pbqLocked && idx - 1 < pbqs.length)}
+          disabled={idx === 0}
           className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border font-bold text-sm text-foreground hover:bg-muted disabled:opacity-30 transition-all group"
         >
           <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
