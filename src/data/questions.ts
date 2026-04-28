@@ -69,6 +69,7 @@ export interface PBQOrdering {
 
 export interface LogEntry {
   line: string;
+  type?: 'info' | 'warning' | 'error';
 }
 
 export interface PBQLogAnalysis {
