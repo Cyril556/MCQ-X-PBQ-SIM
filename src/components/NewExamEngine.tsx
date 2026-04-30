@@ -13,7 +13,7 @@ interface NewExamEngineProps {
   pbqs: PBQuestion[];
   mcqs: MCQuestion[];
   durationMinutes: number;
-  examNumber?: 1 | 2 | 3;
+  examNumber?: 1 | 2 | 3 | 4 | 5;
   isStudyMode?: boolean;
   onFinish: () => void;
 }

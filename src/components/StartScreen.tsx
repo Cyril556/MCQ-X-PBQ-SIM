@@ -1,23 +1,26 @@
-import { useState } from 'react';
-import { Shield, Clock, BookOpen, AlertTriangle, ChevronRight, Zap, Target, Brain, History } from 'lucide-react';
-import { DOMAIN_LABELS, type Domain } from '@/data/questions';
-import { loadHistory } from '@/lib/examHistory';
+import { useState, useMemo } from 'react';
+import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw } from 'lucide-react';
+import { DOMAIN_LABELS, type Domain, type ExamNumber } from '@/data/questions';
+import { loadHistory, loadQuestionStats } from '@/lib/examHistory';
 import { calculateReadiness } from '@/lib/readiness';
 
 interface StartScreenProps {
-  onStartExam: (examNumber: 1 | 2 | 3) => void;
+  onStartExam: (examNumber: ExamNumber) => void;
   onStartStudy: (domain?: Domain) => void;
   onOpenReview: () => void;
   onOpenReadiness: () => void;
+  onPracticeFailed: () => void;
 }
 
-const EXAM_DESCRIPTIONS: Record<1|2|3, { subtitle: string; focus: string; badge: string }> = {
+const EXAM_DESCRIPTIONS: Record<ExamNumber, { subtitle: string; focus: string; badge: string }> = {
   1: { subtitle: 'Core Foundations', focus: 'Identity, Cryptography, Network & Cloud basics', badge: 'bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30' },
   2: { subtitle: 'Threats & Operations', focus: 'Attack types, IR, Vulnerability Mgmt & Governance', badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
   3: { subtitle: 'Architecture & Oversight', focus: 'Security architecture, Zero Trust, Risk & Compliance', badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+  4: { subtitle: 'Cloud & Hybrid Defense', focus: 'Cloud security, virtualization, secure baselines', badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+  5: { subtitle: 'Comprehensive Mastery', focus: 'Mixed difficulty across all five SY0-701 domains', badge: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
 };
 
-export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenReadiness }: StartScreenProps) {
+export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenReadiness, onPracticeFailed }: StartScreenProps) {
   const [selectedDomain, setSelectedDomain] = useState<Domain | ''>('');
   const history = loadHistory();
   const readiness = history.length > 0 ? calculateReadiness() : null;
