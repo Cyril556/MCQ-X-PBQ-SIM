@@ -24,6 +24,10 @@ export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenRea
   const [selectedDomain, setSelectedDomain] = useState<Domain | ''>('');
   const history = loadHistory();
   const readiness = history.length > 0 ? calculateReadiness() : null;
+  const failedCount = useMemo(() => {
+    const stats = loadQuestionStats();
+    return Object.values(stats).filter(s => s.type === 'mcq' && s.timesFailed > 0).length;
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-start p-4 pt-8">
@@ -40,13 +44,13 @@ export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenRea
         </p>
       </div>
 
-      {/* Three Exam Cards */}
-      <div className="w-full max-w-3xl mb-6">
+      {/* Five Exam Cards */}
+      <div className="w-full max-w-5xl mb-6">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
           <Target className="w-4 h-4" /> Exam Mode — choose a practice exam
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {([1, 2, 3] as const).map(num => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {([1, 2, 3, 4, 5] as const).map(num => {
             const desc = EXAM_DESCRIPTIONS[num];
             return (
               <div
