@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw } from 'lucide-react';
+import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw, LogOut } from 'lucide-react';
 import { DOMAIN_LABELS, type Domain, type ExamNumber } from '@/data/questions';
 import { loadHistory, loadQuestionStats } from '@/lib/examHistory';
 import { calculateReadiness } from '@/lib/readiness';
@@ -180,6 +180,19 @@ export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenRea
       <p className="text-xs text-muted-foreground text-center">
         300+ questions &bull; 5 PBQ types &bull; Scaled scoring &bull; Domain-weighted distribution
       </p>
+
+      <button
+        onClick={() => {
+          if (!confirm('Exit the application? Your saved history will remain on this device.')) return;
+          window.close();
+          setTimeout(() => { window.location.href = 'about:blank'; }, 150);
+        }}
+        className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-all"
+        aria-label="Exit application"
+      >
+        <LogOut className="w-3.5 h-3.5" />
+        Exit application
+      </button>
     </div>
   );
 }

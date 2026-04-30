@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play, Shuffle } from 'lucide-react';
+import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play, Shuffle, LogOut } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { MCQuestion, PBQuestion } from '@/data/questions';
 import { isMCQCorrect, isPBQCorrect, calculateScore, type ScoreResult } from '@/lib/examEngine';
@@ -338,8 +338,22 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
           <button 
             onClick={() => setShowNav(!showNav)} 
             className={`p-2.5 rounded-xl border transition-all ${showNav ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-card border-border text-muted-foreground hover:bg-muted'}`}
+            title="Question navigator"
           >
             <ListChecks className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => {
+              if (isStudyMode || submitted) { onFinish(); return; }
+              if (confirm('Exit this exam? Your progress will be lost and the attempt will NOT be saved.')) {
+                onFinish();
+              }
+            }}
+            className="p-2.5 rounded-xl border border-border bg-card hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-all text-muted-foreground"
+            title={isStudyMode ? 'Exit study session' : 'Exit exam (progress lost)'}
+            aria-label="Exit"
+          >
+            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </div>
