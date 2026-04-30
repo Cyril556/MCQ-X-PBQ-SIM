@@ -2,14 +2,15 @@ import { useState, useMemo } from 'react';
 import { loadQuestionStats, getMissedQuestions, loadHistory, type QuestionStats, type ExamAttempt } from '@/lib/examHistory';
 import { getAllPBQDomains } from '@/data/pbq';
 import { getAllMCQDomains } from '@/data/mcq';
-import { Search, Filter, TrendingDown, TrendingUp, Clock, BarChart3, ArrowLeft, Trash2 } from 'lucide-react';
+import { Search, Filter, TrendingDown, TrendingUp, Clock, BarChart3, ArrowLeft, Trash2, RotateCcw } from 'lucide-react';
 import { clearHistory } from '@/lib/examHistory';
 
 interface ReviewModeProps {
   onBack: () => void;
+  onPracticeFailed?: () => void;
 }
 
-export function ReviewMode({ onBack }: ReviewModeProps) {
+export function ReviewMode({ onBack, onPracticeFailed }: ReviewModeProps) {
   const [tab, setTab] = useState<'missed' | 'history'>('missed');
   const [domainFilter, setDomainFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'' | 'pbq' | 'mcq'>('');
@@ -50,10 +51,21 @@ export function ReviewMode({ onBack }: ReviewModeProps) {
           </button>
           <h1 className="text-xl font-bold">Review & History</h1>
         </div>
-        <button onClick={handleClearHistory} className="flex items-center gap-2 px-3 py-1.5 text-xs border border-destructive/50 text-destructive rounded-md hover:bg-destructive/10 transition-all">
-          <Trash2 className="h-3 w-3" />
-          Clear All Data
-        </button>
+        <div className="flex items-center gap-2">
+          {onPracticeFailed && (
+            <button
+              onClick={onPracticeFailed}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs border border-destructive/50 text-destructive rounded-md hover:bg-destructive/10 transition-all"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Practice Failed MCQs
+            </button>
+          )}
+          <button onClick={handleClearHistory} className="flex items-center gap-2 px-3 py-1.5 text-xs border border-destructive/50 text-destructive rounded-md hover:bg-destructive/10 transition-all">
+            <Trash2 className="h-3 w-3" />
+            Clear All Data
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

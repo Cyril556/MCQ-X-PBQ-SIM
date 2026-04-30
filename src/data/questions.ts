@@ -1127,8 +1127,10 @@ function pickN<T>(arr: T[], n: number): T[] {
   return shuffle(arr).slice(0, n);
 }
 
+export type ExamNumber = 1 | 2 | 3 | 4 | 5;
+
 export interface ExamConfig {
-  examNumber: 1 | 2 | 3;
+  examNumber: ExamNumber;
   pbqs: PBQuestion[];
   mcqs: MCQuestion[];
   totalQuestions: number;
@@ -1167,13 +1169,15 @@ export function shuffleOptions(q: MCQuestion): MCQuestion {
 }
 
 // ── Exam seeds — each number yields a distinct, reproducible pool ─
-const EXAM_SEEDS: Record<1|2|3, number> = {
+const EXAM_SEEDS: Record<ExamNumber, number> = {
   1: 42,
   2: 137,
   3: 999,
+  4: 2024,
+  5: 7331,
 };
 
-export function buildExam(examNumber: 1 | 2 | 3 = 1): ExamConfig {
+export function buildExam(examNumber: ExamNumber = 1): ExamConfig {
   const seed = EXAM_SEEDS[examNumber];
 
   // Pick 6 PBQs (mix of types) — seeded per exam number

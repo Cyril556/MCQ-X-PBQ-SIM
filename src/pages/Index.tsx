@@ -3,16 +3,17 @@ import { StartScreen } from '@/components/StartScreen';
 import { NewExamEngine } from '@/components/NewExamEngine';
 import { ReviewMode } from '@/components/ReviewMode';
 import { ReadinessDashboard } from '@/components/ReadinessDashboard';
-import { buildExam, buildStudyQuestions, type Domain } from '@/data/questions';
+import { buildExam, buildStudyQuestions, mcqSingle, mcqSelectTwo, shuffleOptions, type Domain, type ExamNumber, type MCQuestion } from '@/data/questions';
+import { loadQuestionStats } from '@/lib/examHistory';
 
 type AppView = 'start' | 'exam' | 'study' | 'review' | 'readiness';
 
 const Index = () => {
   const [view, setView] = useState<AppView>('start');
   const [examData, setExamData] = useState<ReturnType<typeof buildExam> | null>(null);
-  const [studyQuestions, setStudyQuestions] = useState<ReturnType<typeof buildStudyQuestions>>([]);
+  const [studyQuestions, setStudyQuestions] = useState<MCQuestion[]>([]);
 
-  const handleStartExam = (examNumber: 1 | 2 | 3 = 1) => {
+  const handleStartExam = (examNumber: ExamNumber = 1) => {
     const exam = buildExam(examNumber);
     setExamData(exam);
     setView('exam');
@@ -20,6 +21,20 @@ const Index = () => {
 
   const handleStartStudy = (domain?: Domain) => {
     setStudyQuestions(buildStudyQuestions(domain));
+    setView('study');
+  };
+
+  const handlePracticeFailed = () => {
+    const stats = loadQuestionStats();
+    const failedIds = new Set(
+      Object.values(stats)
+        .filter(s => s.type === 'mcq' && s.timesFailed > 0)
+        .map(s => s.questionId)
+    );
+    const all = [...mcqSingle, ...mcqSelectTwo];
+    const failedQs = all.filter(q => failedIds.has(q.id)).map(shuffleOptions);
+    if (failedQs.length === 0) return;
+    setStudyQuestions(failedQs.sort(() => Math.random() - 0.5));
     setView('study');
   };
 
@@ -48,7 +63,7 @@ const Index = () => {
   }
 
   if (view === 'review') {
-    return <ReviewMode onBack={() => setView('start')} />;
+    return <ReviewMode onBack={() => setView('start')} onPracticeFailed={handlePracticeFailed} />;
   }
 
   if (view === 'readiness') {
@@ -61,6 +76,7 @@ const Index = () => {
       onStartStudy={handleStartStudy}
       onOpenReview={() => setView('review')}
       onOpenReadiness={() => setView('readiness')}
+      onPracticeFailed={handlePracticeFailed}
     />
   );
 };
