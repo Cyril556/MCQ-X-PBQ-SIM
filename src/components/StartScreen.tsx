@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw } from 'lucide-react';
+import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw, LogOut } from 'lucide-react';
 import { DOMAIN_LABELS, type Domain, type ExamNumber } from '@/data/questions';
 import { loadHistory, loadQuestionStats } from '@/lib/examHistory';
 import { calculateReadiness } from '@/lib/readiness';
