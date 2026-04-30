@@ -2,14 +2,15 @@ import { useState, useMemo } from 'react';
 import { loadQuestionStats, getMissedQuestions, loadHistory, type QuestionStats, type ExamAttempt } from '@/lib/examHistory';
 import { getAllPBQDomains } from '@/data/pbq';
 import { getAllMCQDomains } from '@/data/mcq';
-import { Search, Filter, TrendingDown, TrendingUp, Clock, BarChart3, ArrowLeft, Trash2 } from 'lucide-react';
+import { Search, Filter, TrendingDown, TrendingUp, Clock, BarChart3, ArrowLeft, Trash2, RotateCcw } from 'lucide-react';
 import { clearHistory } from '@/lib/examHistory';
 
 interface ReviewModeProps {
   onBack: () => void;
+  onPracticeFailed?: () => void;
 }
 
-export function ReviewMode({ onBack }: ReviewModeProps) {
+export function ReviewMode({ onBack, onPracticeFailed }: ReviewModeProps) {
   const [tab, setTab] = useState<'missed' | 'history'>('missed');
   const [domainFilter, setDomainFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'' | 'pbq' | 'mcq'>('');
