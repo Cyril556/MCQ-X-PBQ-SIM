@@ -51,10 +51,21 @@ export function ReviewMode({ onBack, onPracticeFailed }: ReviewModeProps) {
           </button>
           <h1 className="text-xl font-bold">Review & History</h1>
         </div>
-        <button onClick={handleClearHistory} className="flex items-center gap-2 px-3 py-1.5 text-xs border border-destructive/50 text-destructive rounded-md hover:bg-destructive/10 transition-all">
-          <Trash2 className="h-3 w-3" />
-          Clear All Data
-        </button>
+        <div className="flex items-center gap-2">
+          {onPracticeFailed && (
+            <button
+              onClick={onPracticeFailed}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs border border-destructive/50 text-destructive rounded-md hover:bg-destructive/10 transition-all"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Practice Failed MCQs
+            </button>
+          )}
+          <button onClick={handleClearHistory} className="flex items-center gap-2 px-3 py-1.5 text-xs border border-destructive/50 text-destructive rounded-md hover:bg-destructive/10 transition-all">
+            <Trash2 className="h-3 w-3" />
+            Clear All Data
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
