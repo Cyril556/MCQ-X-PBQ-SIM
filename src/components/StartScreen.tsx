@@ -77,8 +77,8 @@ export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenRea
         </div>
       </div>
 
-      {/* Study Mode */}
-      <div className="w-full max-w-3xl mb-6">
+      {/* Study + Failed-Questions Side by Side */}
+      <div className="w-full max-w-5xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen className="w-4 h-4 text-accent" />
@@ -100,6 +100,31 @@ export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenRea
             className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-bold hover:opacity-90 transition-opacity"
           >
             Start Studying <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className={`rounded-xl border p-4 ${failedCount > 0 ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card opacity-70'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <RotateCcw className="w-4 h-4 text-destructive" />
+            <h2 className="text-sm font-semibold">Retry Failed Questions</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            {failedCount > 0
+              ? `You have ${failedCount} unique question${failedCount === 1 ? '' : 's'} you've missed. Drill them in study mode with instant feedback.`
+              : 'No missed questions yet. Take an exam — anything you get wrong will appear here.'}
+          </p>
+          <button
+            onClick={onPracticeFailed}
+            disabled={failedCount === 0}
+            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Practice {failedCount} Failed <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onOpenReview}
+            className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            View full failure log →
           </button>
         </div>
       </div>
