@@ -18,8 +18,54 @@ interface ExamResultsProps {
 
 export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onRestart, onBackToMenu }: ExamResultsProps) {
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'passed' | 'failed'>('failed');
 
-  return (
+  const reviewItems = useMemo(() => {
+    const items = [
+      ...pbqs.map((q, i) => ({
+        id: q.id,
+        num: i + 1,
+        type: 'pbq' as const,
+        correct: isPBQCorrect(q, pbqAnswers[q.id]),
+        title: q.title,
+        domain: DOMAIN_LABELS[q.domain],
+        explanation: q.explanation,
+        userAns: '',
+        correctAns: '',
+      })),
+      ...mcqs.map((q, i) => {
+        const a = mcqAnswers[q.id];
+        const correct = isMCQCorrect(q, a);
+        let userAns = 'Not answered';
+        let correctAns = '';
+        if (q.type === 'single') {
+          if (a !== undefined) userAns = q.options[a as number] || '—';
+          correctAns = q.options[q.answer as number] || '—';
+        } else {
+          if (a !== undefined) userAns = (a as number[]).map(idx => q.options[idx]).join(', ');
+          correctAns = (q.answer as number[]).map(idx => q.options[idx]).join(', ');
+        }
+        return {
+          id: q.id,
+          num: pbqs.length + i + 1,
+          type: 'mcq' as const,
+          correct,
+          title: q.question,
+          domain: DOMAIN_LABELS[q.domain],
+          explanation: q.explanation,
+          userAns,
+          correctAns,
+        };
+      }),
+    ];
+    return items;
+  }, [pbqs, mcqs, pbqAnswers, mcqAnswers]);
+
+  const passedCount = reviewItems.filter(i => i.correct).length;
+  const failedCount = reviewItems.length - passedCount;
+  const filtered = reviewItems.filter(i =>
+    filter === 'all' ? true : filter === 'passed' ? i.correct : !i.correct
+  );
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         {/* Score Banner */}
