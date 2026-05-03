@@ -1188,9 +1188,35 @@ export function buildExam(examNumber: ExamNumber = 1): ExamConfig {
   const placePbqs = seededShuffle(pbqBank.filter(p => p.type === 'placement'),  seed + 4).slice(0, 1);
   const pbqs = shuffle([...fwPbqs, ...irPbqs, ...logPbqs, ...matchPbqs, ...placePbqs]);
 
-  // Pick MCQs by domain weight (84 MCQ = 90 total - 6 PBQ)
-  // D1: 12% = ~10, D2: 22% = ~18, D3: 18% = ~15, D4: 28% = ~24, D5: 20% = ~17
-  const domainCounts: Record<Domain, number> = { D1: 10, D2: 18, D3: 15, D4: 24, D5: 17 };
+  // Compute MCQ counts so PBQ+MCQ totals match official SY0-701 weights as closely as possible.
+  // Official targets out of 90: D1≈11, D2≈20, D3≈16, D4≈25, D5≈18 (sum 90).
+  const TOTAL = 90;
+  const targetTotals: Record<Domain, number> = {
+    D1: Math.round(DOMAIN_WEIGHTS.D1 * TOTAL), // 11
+    D2: Math.round(DOMAIN_WEIGHTS.D2 * TOTAL), // 20
+    D3: Math.round(DOMAIN_WEIGHTS.D3 * TOTAL), // 16
+    D4: Math.round(DOMAIN_WEIGHTS.D4 * TOTAL), // 25
+    D5: Math.round(DOMAIN_WEIGHTS.D5 * TOTAL), // 18
+  };
+  const pbqCounts: Record<Domain, number> = { D1:0, D2:0, D3:0, D4:0, D5:0 };
+  pbqs.forEach(p => { pbqCounts[p.domain]++; });
+
+  const mcqTarget = TOTAL - pbqs.length; // 84
+  const domainCounts: Record<Domain, number> = { D1:0, D2:0, D3:0, D4:0, D5:0 };
+  let assigned = 0;
+  (['D1','D2','D3','D4','D5'] as Domain[]).forEach(d => {
+    const need = Math.max(0, targetTotals[d] - pbqCounts[d]);
+    domainCounts[d] = need;
+    assigned += need;
+  });
+  // Fix any rounding drift so MCQ count == mcqTarget. Adjust D4 (largest pool) first.
+  let drift = mcqTarget - assigned;
+  const adjustOrder: Domain[] = ['D4','D2','D5','D3','D1'];
+  for (const d of adjustOrder) {
+    if (drift === 0) break;
+    if (drift > 0) { domainCounts[d]++; drift--; }
+    else if (domainCounts[d] > 0) { domainCounts[d]--; drift++; }
+  }
 
   const selectedMCQ: MCQuestion[] = [];
   const usedIds = new Set<string>();
@@ -1199,11 +1225,12 @@ export function buildExam(examNumber: ExamNumber = 1): ExamConfig {
   mcqSelectTwo.forEach(q => selectTwoByDomain[q.domain].push(q));
 
   for (const [domain, count] of Object.entries(domainCounts) as [Domain, number][]) {
+    if (count <= 0) continue;
     const domainSingle    = seededShuffle(mcqSingle.filter(q => q.domain === domain), seed + domain.charCodeAt(1));
     const domainSelectTwo = seededShuffle(selectTwoByDomain[domain],                  seed + domain.charCodeAt(1) + 50);
 
-    // Pick 2 select-two per domain if available
-    const stPicked = domainSelectTwo.slice(0, Math.min(2, domainSelectTwo.length));
+    // Up to 2 select-two per domain (capped at the domain's MCQ count)
+    const stPicked = domainSelectTwo.slice(0, Math.min(2, count, domainSelectTwo.length));
     stPicked.forEach(q => { selectedMCQ.push(shuffleOptions(q)); usedIds.add(q.id); });
 
     // Fill remaining with single-answer
@@ -1213,6 +1240,7 @@ export function buildExam(examNumber: ExamNumber = 1): ExamConfig {
       .slice(0, remaining)
       .forEach(q => { selectedMCQ.push(shuffleOptions(q)); usedIds.add(q.id); });
   }
+
 
   return {
     examNumber,
