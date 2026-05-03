@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw, LogOut } from 'lucide-react';
+import { Shield, BookOpen, AlertTriangle, ChevronRight, Zap, Target, History, RotateCcw, LogOut, Layers } from 'lucide-react';
 import { DOMAIN_LABELS, type Domain, type ExamNumber } from '@/data/questions';
 import { loadHistory, loadQuestionStats } from '@/lib/examHistory';
 import { calculateReadiness } from '@/lib/readiness';
@@ -10,6 +10,7 @@ interface StartScreenProps {
   onOpenReview: () => void;
   onOpenReadiness: () => void;
   onPracticeFailed: () => void;
+  onOpenPBQPractice: () => void;
 }
 
 const EXAM_DESCRIPTIONS: Record<ExamNumber, { subtitle: string; focus: string; badge: string }> = {
@@ -20,7 +21,7 @@ const EXAM_DESCRIPTIONS: Record<ExamNumber, { subtitle: string; focus: string; b
   5: { subtitle: 'Comprehensive Mastery', focus: 'Mixed difficulty across all five SY0-701 domains', badge: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
 };
 
-export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenReadiness, onPracticeFailed }: StartScreenProps) {
+export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenReadiness, onPracticeFailed, onOpenPBQPractice }: StartScreenProps) {
   const [selectedDomain, setSelectedDomain] = useState<Domain | ''>('');
   const history = loadHistory();
   const readiness = history.length > 0 ? calculateReadiness() : null;
