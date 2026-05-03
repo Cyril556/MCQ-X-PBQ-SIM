@@ -63,6 +63,10 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
 
   const passedCount = reviewItems.filter(i => i.correct).length;
   const failedCount = reviewItems.length - passedCount;
+  const filtered = reviewItems.filter(i =>
+    filter === 'all' ? true : filter === 'passed' ? i.correct : !i.correct
+  );
+
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8 max-w-3xl">
