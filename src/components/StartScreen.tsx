@@ -78,6 +78,28 @@ export function StartScreen({ onStartExam, onStartStudy, onOpenReview, onOpenRea
         </div>
       </div>
 
+      {/* PBQ Practice Lab — dedicated drill section */}
+      <div className="w-full max-w-5xl mb-6">
+        <button
+          onClick={onOpenPBQPractice}
+          className="w-full group rounded-xl border border-accent/40 bg-gradient-to-br from-accent/10 via-card to-card hover:from-accent/20 hover:border-accent transition-all p-5 flex items-center gap-4 text-left"
+        >
+          <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
+            <Layers className="w-6 h-6 text-accent" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-base font-bold text-foreground">PBQ Practice Lab</h2>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-accent/20 text-accent border border-accent/30">NEW</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-snug">
+              Drill every Performance-Based Question type that has appeared on SY0-701: firewall rules, log analysis, IR ordering, drag-drop matching, and network placement. Pearson-style UI, untimed, instant feedback.
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-accent group-hover:translate-x-1 transition-transform flex-shrink-0" />
+        </button>
+      </div>
+
       {/* Study + Failed-Questions Side by Side */}
       <div className="w-full max-w-5xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="rounded-xl border border-border bg-card p-4">
