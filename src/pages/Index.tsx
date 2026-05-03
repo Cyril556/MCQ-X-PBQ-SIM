@@ -3,10 +3,11 @@ import { StartScreen } from '@/components/StartScreen';
 import { NewExamEngine } from '@/components/NewExamEngine';
 import { ReviewMode } from '@/components/ReviewMode';
 import { ReadinessDashboard } from '@/components/ReadinessDashboard';
+import { PBQPractice } from '@/components/PBQPractice';
 import { buildExam, buildStudyQuestions, mcqSingle, mcqSelectTwo, shuffleOptions, type Domain, type ExamNumber, type MCQuestion } from '@/data/questions';
 import { loadQuestionStats } from '@/lib/examHistory';
 
-type AppView = 'start' | 'exam' | 'study' | 'review' | 'readiness';
+type AppView = 'start' | 'exam' | 'study' | 'review' | 'readiness' | 'pbq-practice';
 
 const Index = () => {
   const [view, setView] = useState<AppView>('start');
@@ -70,6 +71,10 @@ const Index = () => {
     return <ReadinessDashboard onBack={() => setView('start')} />;
   }
 
+  if (view === 'pbq-practice') {
+    return <PBQPractice onFinish={() => setView('start')} />;
+  }
+
   return (
     <StartScreen
       onStartExam={handleStartExam}
@@ -77,6 +82,7 @@ const Index = () => {
       onOpenReview={() => setView('review')}
       onOpenReadiness={() => setView('readiness')}
       onPracticeFailed={handlePracticeFailed}
+      onOpenPBQPractice={() => setView('pbq-practice')}
     />
   );
 };
