@@ -14,13 +14,186 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      active_session: {
+        Row: {
+          device_id: string
+          exam_number: number | null
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          exam_number?: number | null
+          state: Json
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          exam_number?: number | null
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      exam_attempts: {
+        Row: {
+          confidence_summary: Json
+          created_at: string
+          device_id: string
+          domain_breakdown: Json
+          duration_seconds: number
+          exam_number: number | null
+          id: string
+          mode: string
+          passed: boolean
+          question_results: Json
+          score_raw: number
+          score_scaled: number
+          score_total: number
+        }
+        Insert: {
+          confidence_summary?: Json
+          created_at?: string
+          device_id: string
+          domain_breakdown?: Json
+          duration_seconds?: number
+          exam_number?: number | null
+          id?: string
+          mode?: string
+          passed?: boolean
+          question_results?: Json
+          score_raw?: number
+          score_scaled?: number
+          score_total?: number
+        }
+        Update: {
+          confidence_summary?: Json
+          created_at?: string
+          device_id?: string
+          domain_breakdown?: Json
+          duration_seconds?: number
+          exam_number?: number | null
+          id?: string
+          mode?: string
+          passed?: boolean
+          question_results?: Json
+          score_raw?: number
+          score_scaled?: number
+          score_total?: number
+        }
+        Relationships: []
+      }
+      question_notes: {
+        Row: {
+          device_id: string
+          id: string
+          note: string
+          question_id: string
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          id?: string
+          note?: string
+          question_id: string
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          id?: string
+          note?: string
+          question_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      question_stats: {
+        Row: {
+          device_id: string
+          domain: string | null
+          id: string
+          last_attempted_at: string
+          last_result: string | null
+          question_id: string
+          question_type: string
+          times_attempted: number
+          times_correct: number
+          times_failed: number
+        }
+        Insert: {
+          device_id: string
+          domain?: string | null
+          id?: string
+          last_attempted_at?: string
+          last_result?: string | null
+          question_id: string
+          question_type: string
+          times_attempted?: number
+          times_correct?: number
+          times_failed?: number
+        }
+        Update: {
+          device_id?: string
+          domain?: string | null
+          id?: string
+          last_attempted_at?: string
+          last_result?: string | null
+          question_id?: string
+          question_type?: string
+          times_attempted?: number
+          times_correct?: number
+          times_failed?: number
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          amber_threshold_seconds: number | null
+          confidence_required: string | null
+          daily_minutes_goal: number | null
+          default_mode: string | null
+          device_id: string
+          font_size: string | null
+          red_threshold_seconds: number | null
+          reduce_motion: boolean | null
+          target_exam_date: string | null
+          updated_at: string
+          weekly_question_target: number | null
+        }
+        Insert: {
+          amber_threshold_seconds?: number | null
+          confidence_required?: string | null
+          daily_minutes_goal?: number | null
+          default_mode?: string | null
+          device_id: string
+          font_size?: string | null
+          red_threshold_seconds?: number | null
+          reduce_motion?: boolean | null
+          target_exam_date?: string | null
+          updated_at?: string
+          weekly_question_target?: number | null
+        }
+        Update: {
+          amber_threshold_seconds?: number | null
+          confidence_required?: string | null
+          daily_minutes_goal?: number | null
+          default_mode?: string | null
+          device_id?: string
+          font_size?: string | null
+          red_threshold_seconds?: number | null
+          reduce_motion?: boolean | null
+          target_exam_date?: string | null
+          updated_at?: string
+          weekly_question_target?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_device_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
