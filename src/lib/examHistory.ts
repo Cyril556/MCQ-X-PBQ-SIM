@@ -75,8 +75,9 @@ export function loadQuestionStats(): Record<string, QuestionStats> {
   } catch { return {}; }
 }
 
-function updateQuestionStats(questions: QuestionAttempt[]): void {
+function updateQuestionStats(questions: QuestionAttempt[]): QuestionStats[] {
   const stats = loadQuestionStats();
+  const touched: QuestionStats[] = [];
   questions.forEach(q => {
     const existing = stats[q.questionId] || {
       questionId: q.questionId,
@@ -108,13 +109,14 @@ function updateQuestionStats(questions: QuestionAttempt[]): void {
     existing.lastAttempt = q.timestamp;
     existing.questionText = q.questionText;
     existing.domain = q.domain;
-    // Always update these so review shows the latest attempt's data
     existing.explanation = q.explanation;
     existing.userAnswer = q.userAnswer;
     existing.correctAnswer = q.correctAnswer;
     stats[q.questionId] = existing;
+    touched.push(existing);
   });
   localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  return touched;
 }
 
 export function getWeakDomains(): { domain: string; percentage: number }[] {
