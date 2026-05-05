@@ -61,7 +61,12 @@ export function saveAttempt(attempt: ExamAttempt): void {
   // Keep last 100 attempts
   if (history.length > 100) history.length = 100;
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  updateQuestionStats(attempt.questions);
+  const updatedStats = updateQuestionStats(attempt.questions);
+  // Fire-and-forget cloud sync (dynamic import keeps tests / SSR-safe paths clean)
+  import('./cloudSync').then(({ pushExamAttempt, upsertQuestionStat }) => {
+    pushExamAttempt(attempt);
+    updatedStats.forEach(upsertQuestionStat);
+  }).catch(() => {/* offline – local copy already saved */});
 }
 
 export function loadQuestionStats(): Record<string, QuestionStats> {
