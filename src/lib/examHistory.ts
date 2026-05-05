@@ -61,7 +61,12 @@ export function saveAttempt(attempt: ExamAttempt): void {
   // Keep last 100 attempts
   if (history.length > 100) history.length = 100;
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  updateQuestionStats(attempt.questions);
+  const updatedStats = updateQuestionStats(attempt.questions);
+  // Fire-and-forget cloud sync (dynamic import keeps tests / SSR-safe paths clean)
+  import('./cloudSync').then(({ pushExamAttempt, upsertQuestionStat }) => {
+    pushExamAttempt(attempt);
+    updatedStats.forEach(upsertQuestionStat);
+  }).catch(() => {/* offline – local copy already saved */});
 }
 
 export function loadQuestionStats(): Record<string, QuestionStats> {
@@ -70,8 +75,9 @@ export function loadQuestionStats(): Record<string, QuestionStats> {
   } catch { return {}; }
 }
 
-function updateQuestionStats(questions: QuestionAttempt[]): void {
+function updateQuestionStats(questions: QuestionAttempt[]): QuestionStats[] {
   const stats = loadQuestionStats();
+  const touched: QuestionStats[] = [];
   questions.forEach(q => {
     const existing = stats[q.questionId] || {
       questionId: q.questionId,
@@ -103,13 +109,14 @@ function updateQuestionStats(questions: QuestionAttempt[]): void {
     existing.lastAttempt = q.timestamp;
     existing.questionText = q.questionText;
     existing.domain = q.domain;
-    // Always update these so review shows the latest attempt's data
     existing.explanation = q.explanation;
     existing.userAnswer = q.userAnswer;
     existing.correctAnswer = q.correctAnswer;
     stats[q.questionId] = existing;
+    touched.push(existing);
   });
   localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  return touched;
 }
 
 export function getWeakDomains(): { domain: string; percentage: number }[] {
