@@ -28,8 +28,11 @@ export async function pushExamAttempt(a: ExamAttempt): Promise<void> {
       question_results: a.questions as never,
       confidence_summary: {} as never,
     });
+    if (error) throw error;
+    toast.success('Attempt synced to cloud', { duration: 2000 });
   } catch (e) {
     console.warn('[cloudSync] pushExamAttempt failed', e);
+    toast.error('Saved locally — cloud sync failed', { duration: 3000 });
   }
 }
 
