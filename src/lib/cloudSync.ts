@@ -10,11 +10,12 @@
  */
 import { cloud, deviceId } from '@/integrations/supabase/deviceClient';
 import type { ExamAttempt, QuestionStats } from '@/lib/examHistory';
+import { toast } from 'sonner';
 
 export async function pushExamAttempt(a: ExamAttempt): Promise<void> {
   try {
     const scaled = Math.round(100 + (a.percentage / 100) * 800);
-    await cloud.from('exam_attempts').insert({
+    const { error } = await cloud.from('exam_attempts').insert({
       device_id: deviceId,
       mode: a.mode,
       exam_number: a.examId ? Number(a.examId) || null : null,

@@ -12,6 +12,8 @@ import ReviewPage from "./pages/ReviewPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound.tsx";
+import { SettingsProvider } from "./lib/SettingsContext";
+import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +22,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <SettingsProvider>
       <HashRouter>
+        <KeyboardShortcuts />
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
@@ -34,6 +38,7 @@ const App = () => (
           </Route>
         </Routes>
       </HashRouter>
+      </SettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
