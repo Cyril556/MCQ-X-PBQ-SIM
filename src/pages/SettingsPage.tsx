@@ -2,22 +2,26 @@ import { useEffect, useState } from 'react';
 import { Settings as SettingsIcon, Trash2, Cloud, Save, Check } from 'lucide-react';
 import { clearHistory } from '@/lib/examHistory';
 import { deviceId } from '@/integrations/supabase/deviceClient';
-import { fetchSettings, saveSettings, DEFAULT_SETTINGS, type UserSettings } from '@/lib/userSettings';
+import { DEFAULT_SETTINGS, type UserSettings } from '@/lib/userSettings';
+import { useSettings } from '@/lib/SettingsContext';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
+  const { settings, update, loaded } = useSettings();
   const [s, setS] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  useEffect(() => { fetchSettings().then(setS); }, []);
+  useEffect(() => { if (loaded) setS(settings); }, [loaded, settings]);
 
-  const update = <K extends keyof UserSettings>(k: K, v: UserSettings[K]) => setS((p) => ({ ...p, [k]: v }));
+  const updateField = <K extends keyof UserSettings>(k: K, v: UserSettings[K]) => setS((p) => ({ ...p, [k]: v }));
 
   const onSave = async () => {
     setSaving(true);
-    await saveSettings(s);
+    await update(s);
     setSaving(false);
     setSavedAt(Date.now());
+    toast.success('Settings saved');
     setTimeout(() => setSavedAt(null), 2000);
   };
 
