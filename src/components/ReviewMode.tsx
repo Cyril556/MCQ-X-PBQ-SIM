@@ -4,6 +4,7 @@ import { getAllPBQDomains } from '@/data/pbq';
 import { getAllMCQDomains } from '@/data/mcq';
 import { Search, Filter, TrendingDown, TrendingUp, Clock, BarChart3, ArrowLeft, Trash2, RotateCcw } from 'lucide-react';
 import { clearHistory } from '@/lib/examHistory';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface ReviewModeProps {
   onBack: () => void;
@@ -17,6 +18,7 @@ export function ReviewMode({ onBack, onPracticeFailed }: ReviewModeProps) {
   const [minFails, setMinFails] = useState(1);
   const [maxPasses, setMaxPasses] = useState<number | undefined>(undefined);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
   const allDomains = useMemo(() => {
     const combined = new Set([...getAllPBQDomains(), ...getAllMCQDomains()]);
@@ -29,8 +31,8 @@ export function ReviewMode({ onBack, onPracticeFailed }: ReviewModeProps) {
       maxPasses,
       domain: domainFilter || undefined,
       type: typeFilter || undefined,
-    }).filter(q => !search || q.questionText.toLowerCase().includes(search.toLowerCase()));
-  }, [domainFilter, typeFilter, minFails, maxPasses, search]);
+    }).filter(q => !debouncedSearch || q.questionText.toLowerCase().includes(debouncedSearch.toLowerCase()));
+  }, [domainFilter, typeFilter, minFails, maxPasses, debouncedSearch]);
 
   const history = useMemo(() => loadHistory(), []);
 

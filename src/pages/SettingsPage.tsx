@@ -2,22 +2,26 @@ import { useEffect, useState } from 'react';
 import { Settings as SettingsIcon, Trash2, Cloud, Save, Check } from 'lucide-react';
 import { clearHistory } from '@/lib/examHistory';
 import { deviceId } from '@/integrations/supabase/deviceClient';
-import { fetchSettings, saveSettings, DEFAULT_SETTINGS, type UserSettings } from '@/lib/userSettings';
+import { DEFAULT_SETTINGS, type UserSettings } from '@/lib/userSettings';
+import { useSettings } from '@/lib/SettingsContext';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
+  const { settings, update, loaded } = useSettings();
   const [s, setS] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  useEffect(() => { fetchSettings().then(setS); }, []);
+  useEffect(() => { if (loaded) setS(settings); }, [loaded, settings]);
 
-  const update = <K extends keyof UserSettings>(k: K, v: UserSettings[K]) => setS((p) => ({ ...p, [k]: v }));
+  const updateField = <K extends keyof UserSettings>(k: K, v: UserSettings[K]) => setS((p) => ({ ...p, [k]: v }));
 
   const onSave = async () => {
     setSaving(true);
-    await saveSettings(s);
+    await update(s);
     setSaving(false);
     setSavedAt(Date.now());
+    toast.success('Settings saved');
     setTimeout(() => setSavedAt(null), 2000);
   };
 
@@ -38,17 +42,17 @@ export default function SettingsPage() {
       <Section title="Study goals">
         <Field label="Daily minutes goal">
           <input type="number" min={5} max={240} value={s.daily_minutes_goal}
-            onChange={(e) => update('daily_minutes_goal', Number(e.target.value))}
+            onChange={(e) => updateField('daily_minutes_goal', Number(e.target.value))}
             className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md" />
         </Field>
         <Field label="Weekly question target">
           <input type="number" min={10} max={1000} value={s.weekly_question_target}
-            onChange={(e) => update('weekly_question_target', Number(e.target.value))}
+            onChange={(e) => updateField('weekly_question_target', Number(e.target.value))}
             className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md" />
         </Field>
         <Field label="Target exam date">
           <input type="date" value={s.target_exam_date ?? ''}
-            onChange={(e) => update('target_exam_date', e.target.value || null)}
+            onChange={(e) => updateField('target_exam_date', e.target.value || null)}
             className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md" />
         </Field>
       </Section>
@@ -56,7 +60,7 @@ export default function SettingsPage() {
       <Section title="Exam preferences">
         <Field label="Default mode">
           <select value={s.default_mode}
-            onChange={(e) => update('default_mode', e.target.value as UserSettings['default_mode'])}
+            onChange={(e) => updateField('default_mode', e.target.value as UserSettings['default_mode'])}
             className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md">
             <option value="tutor">Tutor — instant feedback</option>
             <option value="sprint">Sprint — 30 questions, fast</option>
@@ -65,7 +69,7 @@ export default function SettingsPage() {
         </Field>
         <Field label="Confidence rating">
           <select value={s.confidence_required}
-            onChange={(e) => update('confidence_required', e.target.value as UserSettings['confidence_required'])}
+            onChange={(e) => updateField('confidence_required', e.target.value as UserSettings['confidence_required'])}
             className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md">
             <option value="off">Off</option>
             <option value="optional">Optional</option>
@@ -75,12 +79,12 @@ export default function SettingsPage() {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Amber timer threshold (s)">
             <input type="number" min={60} value={s.amber_threshold_seconds}
-              onChange={(e) => update('amber_threshold_seconds', Number(e.target.value))}
+              onChange={(e) => updateField('amber_threshold_seconds', Number(e.target.value))}
               className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md" />
           </Field>
           <Field label="Red timer threshold (s)">
             <input type="number" min={30} value={s.red_threshold_seconds}
-              onChange={(e) => update('red_threshold_seconds', Number(e.target.value))}
+              onChange={(e) => updateField('red_threshold_seconds', Number(e.target.value))}
               className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md" />
           </Field>
         </div>
@@ -89,7 +93,7 @@ export default function SettingsPage() {
       <Section title="Accessibility">
         <Field label="Font size">
           <select value={s.font_size}
-            onChange={(e) => update('font_size', e.target.value as UserSettings['font_size'])}
+            onChange={(e) => updateField('font_size', e.target.value as UserSettings['font_size'])}
             className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-md">
             <option value="small">Small</option>
             <option value="normal">Normal</option>
@@ -98,7 +102,7 @@ export default function SettingsPage() {
         </Field>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={s.reduce_motion}
-            onChange={(e) => update('reduce_motion', e.target.checked)}
+            onChange={(e) => updateField('reduce_motion', e.target.checked)}
             className="w-4 h-4" />
           Reduce motion (disables animations)
         </label>

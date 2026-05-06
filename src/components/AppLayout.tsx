@@ -18,6 +18,9 @@ export default function AppLayout() {
                 SY0-701
               </span>
             </div>
+            <span className="ml-auto hidden sm:inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground">
+              Press <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border">?</kbd> for shortcuts
+            </span>
           </header>
           <main className="flex-1 min-w-0">
             <Outlet />
