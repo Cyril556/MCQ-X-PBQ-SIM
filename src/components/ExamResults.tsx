@@ -38,13 +38,23 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
         const correct = isMCQCorrect(q, a);
         let userAns = 'Not answered';
         let correctAns = '';
+        let whyWrongText = '';
         if (q.type === 'single') {
-          if (a !== undefined) userAns = q.options[a as number] || '—';
+          if (a !== undefined) {
+            userAns = q.options[a as number] || '—';
+            if (!correct) whyWrongText = q.whyWrong?.[a as number] ?? 'This option does not match the scenario constraints.';
+          }
           correctAns = q.options[q.answer as number] || '—';
         } else {
           if (a !== undefined) userAns = (a as number[]).map(idx => q.options[idx]).join(', ');
           correctAns = (q.answer as number[]).map(idx => q.options[idx]).join(', ');
+          if (!correct && Array.isArray(a)) {
+            const wrongPick = (a as number[]).find(idx => !(q.answer as number[]).includes(idx));
+            if (wrongPick !== undefined) whyWrongText = q.whyWrong?.[wrongPick] ?? 'At least one selection does not fit the scenario.';
+          }
         }
+        // Concise 1-sentence "Why correct" — first sentence of explanation only.
+        const whyCorrect = (q.explanation || '').split(/(?<=[.!?])\s+/)[0] || q.explanation;
         return {
           id: q.id,
           num: pbqs.length + i + 1,
@@ -53,6 +63,8 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
           title: q.question,
           domain: DOMAIN_LABELS[q.domain],
           explanation: q.explanation,
+          whyCorrect,
+          whyWrong: whyWrongText,
           userAns,
           correctAns,
         };
