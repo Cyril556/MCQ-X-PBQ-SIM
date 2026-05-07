@@ -22,56 +22,19 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   // Bumped by the Shuffle button to re-randomize question order + MCQ option order.
   const [shuffleNonce, setShuffleNonce] = useState(0);
 
-  // Unified question stream: interleave PBQs at non-consecutive random positions.
-  // PBQs are scattered throughout the exam (not grouped at the start) and never
-  // placed adjacent to another PBQ. Re-shuffles when shuffleNonce changes.
+  // Real-exam ordering: ALL PBQs first, then MCQs. PBQs cannot be revisited
+  // once the candidate moves past the PBQ section (CompTIA behavior).
   const questions = useMemo<UnifiedQ[]>(() => {
-    // Shuffle MCQ order so the same questions appear in a new sequence each time.
     const shuffledMcqs = [...mcqs].sort(() => Math.random() - 0.5);
     const shuffledPbqs = [...pbqs].sort(() => Math.random() - 0.5);
-
-    const mcqItems: UnifiedQ[] = shuffledMcqs.map(q => ({ kind: 'mcq' as const, data: q }));
-    const pbqItems: UnifiedQ[] = shuffledPbqs.map(q => ({ kind: 'pbq' as const, data: q }));
-
-    if (pbqItems.length === 0) return mcqItems;
-    if (mcqItems.length === 0) return pbqItems;
-
-    const total = mcqItems.length + pbqItems.length;
-    const minGap = Math.max(2, Math.floor(mcqItems.length / pbqItems.length));
-    const positions: number[] = [];
-    const used = new Set<number>();
-    let attempts = 0;
-    while (positions.length < pbqItems.length && attempts < 500) {
-      attempts++;
-      const candidate = 1 + Math.floor(Math.random() * (total - 2));
-      if (used.has(candidate)) continue;
-      const tooClose = positions.some(p => Math.abs(p - candidate) < minGap);
-      if (tooClose) continue;
-      positions.push(candidate);
-      used.add(candidate);
-    }
-    if (positions.length < pbqItems.length) {
-      positions.length = 0;
-      const step = Math.floor(total / (pbqItems.length + 1));
-      for (let i = 1; i <= pbqItems.length; i++) positions.push(i * step);
-    }
-    positions.sort((a, b) => a - b);
-
-    const out: UnifiedQ[] = [];
-    let mcqCursor = 0;
-    let pbqCursor = 0;
-    for (let i = 0; i < total; i++) {
-      if (positions[pbqCursor] === i && pbqCursor < pbqItems.length) {
-        out.push(pbqItems[pbqCursor++]);
-      } else if (mcqCursor < mcqItems.length) {
-        out.push(mcqItems[mcqCursor++]);
-      } else if (pbqCursor < pbqItems.length) {
-        out.push(pbqItems[pbqCursor++]);
-      }
-    }
-    return out;
+    return [
+      ...shuffledPbqs.map(q => ({ kind: 'pbq' as const, data: q })),
+      ...shuffledMcqs.map(q => ({ kind: 'mcq' as const, data: q })),
+    ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pbqs, mcqs, shuffleNonce]);
+
+  const pbqCount = pbqs.length;
 
   const [idx, setIdx] = useState(0);
   const [pbqAnswers, setPbqAnswers] = useState<Record<string, any>>({});
@@ -80,6 +43,11 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const [submitted, setSubmitted] = useState(false);
   const [showNav, setShowNav] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [showPbqLock, setShowPbqLock] = useState(false);
+  const [pbqSectionLocked, setPbqSectionLocked] = useState(false);
+  const [warned30, setWarned30] = useState(false);
+  const [warned10, setWarned10] = useState(false);
+  const [warningBanner, setWarningBanner] = useState<null | '30' | '10'>(null);
   
   const [isPaused, setIsPaused] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
@@ -106,7 +74,19 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
       const r = Math.max(0, durationMinutes * 60 - elapsedTotal);
       
       setRemaining(r);
-      
+
+      // 30-min and 10-min warning banners (real-exam style)
+      if (!warned30 && r <= 30 * 60 && r > 10 * 60) {
+        setWarned30(true);
+        setWarningBanner('30');
+        setTimeout(() => setWarningBanner(b => (b === '30' ? null : b)), 8000);
+      }
+      if (!warned10 && r <= 10 * 60 && r > 0) {
+        setWarned10(true);
+        setWarningBanner('10');
+        setTimeout(() => setWarningBanner(b => (b === '10' ? null : b)), 10000);
+      }
+
       if (r <= 0) {
         clearInterval(interval);
         handleSubmit();
@@ -218,7 +198,25 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const goTo = (newIdx: number) => {
     if (isPaused) return;
     if (newIdx < 0 || newIdx >= questions.length) return;
+    // PBQ-first lock: once the candidate leaves the PBQ section, they cannot return.
+    if (!isStudyMode && pbqCount > 0) {
+      const leavingPbq = idx < pbqCount && newIdx >= pbqCount;
+      const enteringPbq = idx >= pbqCount && newIdx < pbqCount;
+      if (enteringPbq && pbqSectionLocked) return; // hard block
+      if (leavingPbq && !pbqSectionLocked) {
+        setShowPbqLock(true);
+        (window as any).__pendingIdx = newIdx;
+        return;
+      }
+    }
     setIdx(newIdx);
+  };
+
+  const confirmLeavePbqs = () => {
+    setPbqSectionLocked(true);
+    setShowPbqLock(false);
+    const pending = (window as any).__pendingIdx;
+    if (typeof pending === 'number') setIdx(pending);
   };
 
   const handleShuffle = () => {
@@ -293,7 +291,32 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
         </DialogContent>
       </Dialog>
 
-      {/* PBQ section gate removed — exam is one continuous queue. */}
+      {/* PBQ-first lock confirmation */}
+      <Dialog open={showPbqLock} onOpenChange={setShowPbqLock}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Leave Performance-Based Section?</DialogTitle>
+            <DialogDescription>
+              Once you leave the PBQ section to begin the multiple-choice questions, you will <strong>not be able to return</strong> to the PBQs. This mirrors the real CompTIA exam.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <button onClick={() => setShowPbqLock(false)} className="px-4 py-2 rounded-md border border-border text-sm">Stay on PBQs</button>
+            <button onClick={confirmLeavePbqs} className="px-4 py-2 rounded-md bg-warning text-warning-foreground font-bold text-sm">Continue to MCQs</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 30 / 10 minute warning banner */}
+      {warningBanner && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[90] px-6 py-3 rounded-xl shadow-2xl border-2 font-bold text-sm flex items-center gap-3 animate-in slide-in-from-top-4 ${
+          warningBanner === '10' ? 'bg-destructive text-destructive-foreground border-destructive' : 'bg-warning text-warning-foreground border-warning'
+        }`}>
+          <AlertTriangle className="h-5 w-5" />
+          {warningBanner === '30' ? '30 minutes remaining' : '10 minutes remaining — final stretch'}
+          <button onClick={() => setWarningBanner(null)} className="ml-3 opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Header Bar */}
       <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">

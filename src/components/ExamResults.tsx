@@ -30,6 +30,8 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
         title: q.title,
         domain: DOMAIN_LABELS[q.domain],
         explanation: q.explanation,
+        whyCorrect: (q.explanation || '').split(/(?<=[.!?])\s+/)[0] || q.explanation,
+        whyWrong: '',
         userAns: '',
         correctAns: '',
       })),
@@ -38,13 +40,23 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
         const correct = isMCQCorrect(q, a);
         let userAns = 'Not answered';
         let correctAns = '';
+        let whyWrongText = '';
         if (q.type === 'single') {
-          if (a !== undefined) userAns = q.options[a as number] || '—';
+          if (a !== undefined) {
+            userAns = q.options[a as number] || '—';
+            if (!correct) whyWrongText = q.whyWrong?.[a as number] ?? 'This option does not match the scenario constraints.';
+          }
           correctAns = q.options[q.answer as number] || '—';
         } else {
           if (a !== undefined) userAns = (a as number[]).map(idx => q.options[idx]).join(', ');
           correctAns = (q.answer as number[]).map(idx => q.options[idx]).join(', ');
+          if (!correct && Array.isArray(a)) {
+            const wrongPick = (a as number[]).find(idx => !(q.answer as number[]).includes(idx));
+            if (wrongPick !== undefined) whyWrongText = q.whyWrong?.[wrongPick] ?? 'At least one selection does not fit the scenario.';
+          }
         }
+        // Concise 1-sentence "Why correct" — first sentence of explanation only.
+        const whyCorrect = (q.explanation || '').split(/(?<=[.!?])\s+/)[0] || q.explanation;
         return {
           id: q.id,
           num: pbqs.length + i + 1,
@@ -53,6 +65,8 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
           title: q.question,
           domain: DOMAIN_LABELS[q.domain],
           explanation: q.explanation,
+          whyCorrect,
+          whyWrong: whyWrongText,
           userAns,
           correctAns,
         };
@@ -184,7 +198,10 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
                       <div className="p-3 border-t border-border bg-card text-xs space-y-1.5">
                         {item.type === 'mcq' && !item.correct && <p className="text-destructive"><strong>Your answer:</strong> {item.userAns}</p>}
                         {item.type === 'mcq' && !item.correct && <p className="text-success"><strong>Correct answer:</strong> {item.correctAns}</p>}
-                        <div className="flex items-start gap-1.5 text-muted-foreground"><Info className="h-3 w-3 text-accent mt-0.5 flex-shrink-0" /><span>{item.explanation}</span></div>
+                        {!item.correct && item.whyWrong && (
+                          <div className="flex items-start gap-1.5 text-destructive/90"><XCircle className="h-3 w-3 mt-0.5 flex-shrink-0" /><span><strong className="uppercase text-[9px] tracking-wider mr-1">Why incorrect:</strong>{item.whyWrong}</span></div>
+                        )}
+                        <div className="flex items-start gap-1.5 text-success/90"><CheckCircle2 className="h-3 w-3 mt-0.5 flex-shrink-0" /><span><strong className="uppercase text-[9px] tracking-wider mr-1">Why correct:</strong>{item.whyCorrect}</span></div>
                       </div>
                     )}
                   </div>
