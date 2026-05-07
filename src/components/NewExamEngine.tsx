@@ -74,7 +74,19 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
       const r = Math.max(0, durationMinutes * 60 - elapsedTotal);
       
       setRemaining(r);
-      
+
+      // 30-min and 10-min warning banners (real-exam style)
+      if (!warned30 && r <= 30 * 60 && r > 10 * 60) {
+        setWarned30(true);
+        setWarningBanner('30');
+        setTimeout(() => setWarningBanner(b => (b === '30' ? null : b)), 8000);
+      }
+      if (!warned10 && r <= 10 * 60 && r > 0) {
+        setWarned10(true);
+        setWarningBanner('10');
+        setTimeout(() => setWarningBanner(b => (b === '10' ? null : b)), 10000);
+      }
+
       if (r <= 0) {
         clearInterval(interval);
         handleSubmit();
