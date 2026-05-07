@@ -22,56 +22,19 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   // Bumped by the Shuffle button to re-randomize question order + MCQ option order.
   const [shuffleNonce, setShuffleNonce] = useState(0);
 
-  // Unified question stream: interleave PBQs at non-consecutive random positions.
-  // PBQs are scattered throughout the exam (not grouped at the start) and never
-  // placed adjacent to another PBQ. Re-shuffles when shuffleNonce changes.
+  // Real-exam ordering: ALL PBQs first, then MCQs. PBQs cannot be revisited
+  // once the candidate moves past the PBQ section (CompTIA behavior).
   const questions = useMemo<UnifiedQ[]>(() => {
-    // Shuffle MCQ order so the same questions appear in a new sequence each time.
     const shuffledMcqs = [...mcqs].sort(() => Math.random() - 0.5);
     const shuffledPbqs = [...pbqs].sort(() => Math.random() - 0.5);
-
-    const mcqItems: UnifiedQ[] = shuffledMcqs.map(q => ({ kind: 'mcq' as const, data: q }));
-    const pbqItems: UnifiedQ[] = shuffledPbqs.map(q => ({ kind: 'pbq' as const, data: q }));
-
-    if (pbqItems.length === 0) return mcqItems;
-    if (mcqItems.length === 0) return pbqItems;
-
-    const total = mcqItems.length + pbqItems.length;
-    const minGap = Math.max(2, Math.floor(mcqItems.length / pbqItems.length));
-    const positions: number[] = [];
-    const used = new Set<number>();
-    let attempts = 0;
-    while (positions.length < pbqItems.length && attempts < 500) {
-      attempts++;
-      const candidate = 1 + Math.floor(Math.random() * (total - 2));
-      if (used.has(candidate)) continue;
-      const tooClose = positions.some(p => Math.abs(p - candidate) < minGap);
-      if (tooClose) continue;
-      positions.push(candidate);
-      used.add(candidate);
-    }
-    if (positions.length < pbqItems.length) {
-      positions.length = 0;
-      const step = Math.floor(total / (pbqItems.length + 1));
-      for (let i = 1; i <= pbqItems.length; i++) positions.push(i * step);
-    }
-    positions.sort((a, b) => a - b);
-
-    const out: UnifiedQ[] = [];
-    let mcqCursor = 0;
-    let pbqCursor = 0;
-    for (let i = 0; i < total; i++) {
-      if (positions[pbqCursor] === i && pbqCursor < pbqItems.length) {
-        out.push(pbqItems[pbqCursor++]);
-      } else if (mcqCursor < mcqItems.length) {
-        out.push(mcqItems[mcqCursor++]);
-      } else if (pbqCursor < pbqItems.length) {
-        out.push(pbqItems[pbqCursor++]);
-      }
-    }
-    return out;
+    return [
+      ...shuffledPbqs.map(q => ({ kind: 'pbq' as const, data: q })),
+      ...shuffledMcqs.map(q => ({ kind: 'mcq' as const, data: q })),
+    ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pbqs, mcqs, shuffleNonce]);
+
+  const pbqCount = pbqs.length;
 
   const [idx, setIdx] = useState(0);
   const [pbqAnswers, setPbqAnswers] = useState<Record<string, any>>({});
