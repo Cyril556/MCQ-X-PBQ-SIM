@@ -198,7 +198,25 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const goTo = (newIdx: number) => {
     if (isPaused) return;
     if (newIdx < 0 || newIdx >= questions.length) return;
+    // PBQ-first lock: once the candidate leaves the PBQ section, they cannot return.
+    if (!isStudyMode && pbqCount > 0) {
+      const leavingPbq = idx < pbqCount && newIdx >= pbqCount;
+      const enteringPbq = idx >= pbqCount && newIdx < pbqCount;
+      if (enteringPbq && pbqSectionLocked) return; // hard block
+      if (leavingPbq && !pbqSectionLocked) {
+        setShowPbqLock(true);
+        (window as any).__pendingIdx = newIdx;
+        return;
+      }
+    }
     setIdx(newIdx);
+  };
+
+  const confirmLeavePbqs = () => {
+    setPbqSectionLocked(true);
+    setShowPbqLock(false);
+    const pending = (window as any).__pendingIdx;
+    if (typeof pending === 'number') setIdx(pending);
   };
 
   const handleShuffle = () => {
