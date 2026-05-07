@@ -43,6 +43,11 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const [submitted, setSubmitted] = useState(false);
   const [showNav, setShowNav] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [showPbqLock, setShowPbqLock] = useState(false);
+  const [pbqSectionLocked, setPbqSectionLocked] = useState(false);
+  const [warned30, setWarned30] = useState(false);
+  const [warned10, setWarned10] = useState(false);
+  const [warningBanner, setWarningBanner] = useState<null | '30' | '10'>(null);
   
   const [isPaused, setIsPaused] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
