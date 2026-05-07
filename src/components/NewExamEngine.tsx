@@ -291,7 +291,32 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
         </DialogContent>
       </Dialog>
 
-      {/* PBQ section gate removed — exam is one continuous queue. */}
+      {/* PBQ-first lock confirmation */}
+      <Dialog open={showPbqLock} onOpenChange={setShowPbqLock}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Leave Performance-Based Section?</DialogTitle>
+            <DialogDescription>
+              Once you leave the PBQ section to begin the multiple-choice questions, you will <strong>not be able to return</strong> to the PBQs. This mirrors the real CompTIA exam.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <button onClick={() => setShowPbqLock(false)} className="px-4 py-2 rounded-md border border-border text-sm">Stay on PBQs</button>
+            <button onClick={confirmLeavePbqs} className="px-4 py-2 rounded-md bg-warning text-warning-foreground font-bold text-sm">Continue to MCQs</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 30 / 10 minute warning banner */}
+      {warningBanner && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[90] px-6 py-3 rounded-xl shadow-2xl border-2 font-bold text-sm flex items-center gap-3 animate-in slide-in-from-top-4 ${
+          warningBanner === '10' ? 'bg-destructive text-destructive-foreground border-destructive' : 'bg-warning text-warning-foreground border-warning'
+        }`}>
+          <AlertTriangle className="h-5 w-5" />
+          {warningBanner === '30' ? '30 minutes remaining' : '10 minutes remaining — final stretch'}
+          <button onClick={() => setWarningBanner(null)} className="ml-3 opacity-70 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Header Bar */}
       <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
