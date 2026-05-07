@@ -30,6 +30,8 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
         title: q.title,
         domain: DOMAIN_LABELS[q.domain],
         explanation: q.explanation,
+        whyCorrect: (q.explanation || '').split(/(?<=[.!?])\s+/)[0] || q.explanation,
+        whyWrong: '',
         userAns: '',
         correctAns: '',
       })),
