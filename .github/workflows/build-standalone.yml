@@ -1,0 +1,71 @@
+name: Build Standalone HTML
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Install vite-plugin-singlefile
+        run: npm install --save-dev vite-plugin-singlefile --legacy-peer-deps
+
+      - name: Patch vite.config for singlefile build
+        run: |
+          cat > vite.config.standalone.ts << 'EOF'
+          import { defineConfig } from "vite";
+          import react from "@vitejs/plugin-react";
+          import path from "path";
+          import { viteSingleFile } from "vite-plugin-singlefile";
+
+          export default defineConfig({
+            base: "./",
+            plugins: [react(), viteSingleFile()],
+            resolve: {
+              alias: {
+                "@": path.resolve(__dirname, "./src"),
+              },
+            },
+            build: {
+              outDir: "dist-standalone",
+              assetsInlineLimit: 100000000,
+              chunkSizeWarningLimit: 100000000,
+              cssCodeSplit: false,
+              rollupOptions: {
+                output: {
+                  inlineDynamicImports: true,
+                },
+              },
+            },
+          });
+          EOF
+
+      - name: Build standalone HTML
+        run: npx vite build --config vite.config.standalone.ts
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Rename output
+        run: mv dist-standalone/index.html dist-standalone/SecPlus-Trainer-SY0701.html
+
+      - name: Upload standalone HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecPlus-Trainer-Standalone
+          path: dist-standalone/SecPlus-Trainer-SY0701.html
+          retention-days: 30
