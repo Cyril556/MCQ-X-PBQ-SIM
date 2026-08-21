@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ReviewMode.css';
 
 interface Question {
@@ -26,6 +26,32 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'wrong' | 'correct' | 'pbq'>('all');
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      switch(e.key.toLowerCase()) {
+        case '1': setFilter('all'); break;
+        case '2': setFilter('wrong'); break;
+        case '3': setFilter('correct'); break;
+        case '4': setFilter('pbq'); break;
+        case 'e': expandAll(); break;
+        case 'c': collapseAll(); break;
+      }
+    };
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [filter]);
 
   const toggleQuestion = (index: number) => {
     const newExpanded = new Set(expandedQuestions);
@@ -45,6 +71,10 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
     setExpandedQuestions(new Set());
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const filteredQuestions = questions.filter((q) => {
     if (filter === 'wrong') return JSON.stringify(q.userAnswer) !== JSON.stringify(q.correctAnswer);
     if (filter === 'correct') return JSON.stringify(q.userAnswer) === JSON.stringify(q.correctAnswer);
@@ -55,6 +85,7 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   const wrongCount = questions.filter((q) => JSON.stringify(q.userAnswer) !== JSON.stringify(q.correctAnswer)).length;
   const correctCount = questions.length - wrongCount;
   const pbqCount = questions.filter((q) => q.isPBQ).length;
+  const progress = Math.round((filteredQuestions.filter((_, i) => expandedQuestions.has(i)).length / filteredQuestions.length) * 100);
 
   return (
     <div className="review-mode">
@@ -86,14 +117,15 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
 
       <div className="review-controls">
         <div className="review-filters">
-          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({questions.length})</button>
-          <button className={filter === 'wrong' ? 'active' : ''} onClick={() => setFilter('wrong')}>Wrong ({wrongCount})</button>
-          <button className={filter === 'correct' ? 'active' : ''} onClick={() => setFilter('correct')}>Correct ({correctCount})</button>
-          <button className={filter === 'pbq' ? 'active' : ''} onClick={() => setFilter('pbq')}>PBQs ({pbqCount})</button>
+          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>1️⃣ All ({questions.length})</button>
+          <button className={filter === 'wrong' ? 'active' : ''} onClick={() => setFilter('wrong')}>2️⃣ Wrong ({wrongCount})</button>
+          <button className={filter === 'correct' ? 'active' : ''} onClick={() => setFilter('correct')}>3️⃣ Correct ({correctCount})</button>
+          <button className={filter === 'pbq' ? 'active' : ''} onClick={() => setFilter('pbq')}>4️⃣ PBQs ({pbqCount})</button>
         </div>
         <div className="expand-controls">
-          <button onClick={expandAll} className="btn-expand">Expand All</button>
-          <button onClick={collapseAll} className="btn-expand">Collapse All</button>
+          <button onClick={expandAll} className="btn-expand">E: Expand All</button>
+          <button onClick={collapseAll} className="btn-expand">C: Collapse All</button>
+          <span className="progress-indicator">📈 {progress}% reviewed</span>
         </div>
       </div>
 
@@ -146,6 +178,12 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
           );
         })}
       </div>
+
+      {showScrollTop && (
+        <button className="scroll-top" onClick={scrollToTop}>
+          ⬆️ Top
+        </button>
+      )}
     </div>
   );
 };
