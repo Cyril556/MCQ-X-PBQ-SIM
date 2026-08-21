@@ -37,6 +37,14 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
     setExpandedQuestions(newExpanded);
   };
 
+  const expandAll = () => {
+    setExpandedQuestions(new Set(filteredQuestions.map((_, i) => i)));
+  };
+
+  const collapseAll = () => {
+    setExpandedQuestions(new Set());
+  };
+
   const filteredQuestions = questions.filter((q) => {
     if (filter === 'wrong') return JSON.stringify(q.userAnswer) !== JSON.stringify(q.correctAnswer);
     if (filter === 'correct') return JSON.stringify(q.userAnswer) === JSON.stringify(q.correctAnswer);
@@ -76,11 +84,17 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
         </div>
       </div>
 
-      <div className="review-filters">
-        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({questions.length})</button>
-        <button className={filter === 'wrong' ? 'active' : ''} onClick={() => setFilter('wrong')}>Wrong ({wrongCount})</button>
-        <button className={filter === 'correct' ? 'active' : ''} onClick={() => setFilter('correct')}>Correct ({correctCount})</button>
-        <button className={filter === 'pbq' ? 'active' : ''} onClick={() => setFilter('pbq')}>PBQs ({pbqCount})</button>
+      <div className="review-controls">
+        <div className="review-filters">
+          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All ({questions.length})</button>
+          <button className={filter === 'wrong' ? 'active' : ''} onClick={() => setFilter('wrong')}>Wrong ({wrongCount})</button>
+          <button className={filter === 'correct' ? 'active' : ''} onClick={() => setFilter('correct')}>Correct ({correctCount})</button>
+          <button className={filter === 'pbq' ? 'active' : ''} onClick={() => setFilter('pbq')}>PBQs ({pbqCount})</button>
+        </div>
+        <div className="expand-controls">
+          <button onClick={expandAll} className="btn-expand">Expand All</button>
+          <button onClick={collapseAll} className="btn-expand">Collapse All</button>
+        </div>
       </div>
 
       <div className="questions-review">
