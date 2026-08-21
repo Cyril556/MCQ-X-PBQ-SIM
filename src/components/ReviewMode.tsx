@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './ReviewMode.css';
 
 interface Question {
   id: string;
