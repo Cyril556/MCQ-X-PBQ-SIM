@@ -2,6 +2,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  position: relative;
 }
 
 .review-header {
@@ -125,6 +126,7 @@
 .expand-controls {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .btn-expand {
@@ -142,6 +144,15 @@
 .btn-expand:hover {
   background: #007bff;
   color: white;
+}
+
+.progress-indicator {
+  padding: 0.5rem 1rem;
+  background: #e7f3ff;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #004085;
+  font-size: 0.875rem;
 }
 
 .questions-review {
@@ -306,6 +317,28 @@
   color: #004085;
 }
 
+.scroll-top {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+  transition: all 0.3s;
+  z-index: 1000;
+}
+
+.scroll-top:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+}
+
 @media (max-width: 768px) {
   .review-mode {
     padding: 1rem;
@@ -339,5 +372,42 @@
 
   .expand-controls {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .scroll-top {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+@media print {
+  .review-header,
+  .review-filters,
+  .expand-controls,
+  .scroll-top,
+  .btn-retake {
+    display: none !important;
+  }
+
+  .question-header {
+    cursor: default;
+    background: white !important;
+  }
+
+  .question-body {
+    display: block !important;
+  }
+
+  .question-review {
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+  }
+
+  .score-summary {
+    background: white !important;
+    color: black !important;
+    border: 2px solid #333;
   }
 }
