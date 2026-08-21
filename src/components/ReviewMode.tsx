@@ -25,6 +25,17 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   onRetake,
 }) => {
   const [filter, setFilter] = useState<'all' | 'wrong' | 'correct' | 'pbq'>('all');
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
+
+  const toggleQuestion = (index: number) => {
+    const newExpanded = new Set(expandedQuestions);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedQuestions(newExpanded);
+  };
 
   const filteredQuestions = questions.filter((q) => {
     if (filter === 'wrong') return JSON.stringify(q.userAnswer) !== JSON.stringify(q.correctAnswer);
@@ -75,43 +86,48 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
       <div className="questions-review">
         {filteredQuestions.map((q, index) => {
           const isCorrect = JSON.stringify(q.userAnswer) === JSON.stringify(q.correctAnswer);
+          const isExpanded = expandedQuestions.has(index);
+          
           return (
             <div key={q.id} className={`question-review ${isCorrect ? 'correct' : 'wrong'}`}>
-              <div className="question-header">
+              <div className="question-header" onClick={() => toggleQuestion(index)}>
                 <span className="question-number">Question {index + 1}</span>
                 {q.isPBQ && <span className="pbq-badge">🔥 PBQ</span>}
                 <span className="domain-badge">{q.domain}</span>
                 <span className="status-icon">{isCorrect ? '✅' : '❌'}</span>
+                <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
               </div>
 
-              <div className="question-body">
-                <div className="question-text">
-                  <strong>Question:</strong>
-                  <p>{q.questionText}</p>
-                </div>
-
-                <div className={`your-answer ${isCorrect ? 'correct-answer' : 'wrong-answer'}`}>
-                  <strong>Your Answer:</strong>
-                  <div className="answer-content">
-                    {Array.isArray(q.userAnswer) ? q.userAnswer.join(', ') : q.userAnswer || 'No answer'}
+              {isExpanded && (
+                <div className="question-body">
+                  <div className="question-text">
+                    <strong>Question:</strong>
+                    <p>{q.questionText}</p>
                   </div>
-                  {!isCorrect && <div className="wrong-indicator">❌ Incorrect</div>}
-                </div>
 
-                {!isCorrect && (
-                  <div className="correct-answer-display">
-                    <strong>Correct Answer:</strong>
+                  <div className={`your-answer ${isCorrect ? 'correct-answer' : 'wrong-answer'}`}>
+                    <strong>Your Answer:</strong>
                     <div className="answer-content">
-                      {Array.isArray(q.correctAnswer) ? q.correctAnswer.join(', ') : q.correctAnswer}
+                      {Array.isArray(q.userAnswer) ? q.userAnswer.join(', ') : q.userAnswer || 'No answer'}
                     </div>
+                    {!isCorrect && <div className="wrong-indicator">❌ Incorrect</div>}
                   </div>
-                )}
 
-                <div className="explanation-section">
-                  <strong>📖 Explanation:</strong>
-                  <p className="explanation-text">{q.explanation || 'No explanation available'}</p>
+                  {!isCorrect && (
+                    <div className="correct-answer-display">
+                      <strong>Correct Answer:</strong>
+                      <div className="answer-content">
+                        {Array.isArray(q.correctAnswer) ? q.correctAnswer.join(', ') : q.correctAnswer}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="explanation-section">
+                    <strong>📖 Explanation:</strong>
+                    <p className="explanation-text">{q.explanation || 'No explanation available'}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
