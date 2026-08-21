@@ -1,150 +1,138 @@
-import { Trophy, Target, BarChart3 } from 'lucide-react';
-import { PBQQuestion } from '@/data/pbq';
-import { MCQItem } from '@/data/mcq';
+import React, { useState } from 'react';
 
 interface ResultsScreenProps {
-  pbqQuestions: PBQQuestion[];
-  mcqQuestions: MCQItem[];
-  pbqAnswers: Record<string, any>;
-  mcqAnswers: Record<string, number | number[]>;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  questions?: any[];
+  onRetake: () => void;
 }
 
-export function ResultsScreen({ pbqQuestions, mcqQuestions, pbqAnswers, mcqAnswers }: ResultsScreenProps) {
-  // Score PBQ (only answered questions)
-  let pbqCorrect = 0;
-  let pbqAnswered = 0;
-  pbqQuestions.forEach((q) => {
-    const ans = pbqAnswers[q.id];
-    if (!ans) return;
-    let hasAnswer = false;
-    let isCorrect = false;
-    if (q.type === 'firewall' && q.correctActions) {
-      hasAnswer = (ans as string[]).some((a: string) => a !== '');
-      isCorrect = (ans as string[]).every((a: string, i: number) => a === q.correctActions![i]);
-    } else if (q.type === 'matching' && q.matchingItems) {
-      hasAnswer = Object.keys(ans).length > 0;
-      isCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
-    } else if (q.type === 'classification' && q.classificationItems) {
-      hasAnswer = Object.keys(ans).length > 0;
-      isCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
-    } else if (q.type === 'placement' && q.placementItems) {
-      hasAnswer = Object.keys(ans).length > 0;
-      isCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
-    } else if (q.type === 'ordering' && q.orderItems) {
-      hasAnswer = (ans as string[]).length > 0;
-      isCorrect = q.orderItems.every((it) => (ans as string[])[it.correctPosition] === it.step);
-    }
-    if (hasAnswer) {
-      pbqAnswered++;
-      if (isCorrect) pbqCorrect++;
-    }
+export const ResultsScreen: React.FC<ResultsScreenProps> = ({
+  score,
+  totalQuestions,
+  correctAnswers,
+  questions = [],
+  onRetake,
+}) => {
+  const [filter, setFilter] = useState<'all' | 'wrong' | 'correct'>('all');
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+
+  const filteredQuestions = questions.filter((q) => {
+    const isCorrect = q.isCorrect;
+    if (filter === 'wrong') return !isCorrect;
+    if (filter === 'correct') return isCorrect;
+    return true;
   });
 
-  // Score MCQ (only answered questions)
-  let mcqCorrect = 0;
-  let mcqAnswered = 0;
-  mcqQuestions.forEach((q) => {
-    const ans = mcqAnswers[q.id];
-    if (ans === undefined) return;
-    mcqAnswered++;
-    if (q.type === 'single') {
-      if (ans === q.answer) mcqCorrect++;
+  const wrongCount = questions.filter((q) => !q.isCorrect).length;
+  const correctCount = questions.filter((q) => q.isCorrect).length;
+
+  const toggleExpand = (index: number) => {
+    const newExpanded = new Set(expanded);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
     } else {
-      const selected = [...(ans as number[])].sort();
-      const correct = [...(q.answer as number[])].sort();
-      if (JSON.stringify(selected) === JSON.stringify(correct)) mcqCorrect++;
+      newExpanded.add(index);
     }
-  });
-
-  const totalAnswered = pbqAnswered + mcqAnswered;
-  const totalCorrect = pbqCorrect + mcqCorrect;
-  const overallPct = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
-
-  // Domain breakdown
-  const domainMap: Record<string, { correct: number; total: number }> = {};
-  pbqQuestions.forEach((q) => {
-    if (!domainMap[q.domain]) domainMap[q.domain] = { correct: 0, total: 0 };
-    domainMap[q.domain].total++;
-    const ans = pbqAnswers[q.id];
-    if (!ans) return;
-    let isCorrect = false;
-    if (q.type === 'firewall' && q.correctActions) isCorrect = (ans as string[]).every((a: string, i: number) => a === q.correctActions![i]);
-    else if (q.type === 'matching' && q.matchingItems) isCorrect = q.matchingItems.every((it) => ans[it.source] === it.target);
-    else if (q.type === 'classification' && q.classificationItems) isCorrect = q.classificationItems.every((it) => ans[it.item] === it.category);
-    else if (q.type === 'placement' && q.placementItems) isCorrect = q.placementItems.every((it) => ans[it.item] === it.correctZone);
-    else if (q.type === 'ordering' && q.orderItems) isCorrect = q.orderItems.every((it) => (ans as string[])[it.correctPosition] === it.step);
-    if (isCorrect) domainMap[q.domain].correct++;
-  });
-  mcqQuestions.forEach((q) => {
-    if (!domainMap[q.domain]) domainMap[q.domain] = { correct: 0, total: 0 };
-    domainMap[q.domain].total++;
-    const ans = mcqAnswers[q.id];
-    if (ans === undefined) return;
-    let isCorrect = false;
-    if (q.type === 'single') isCorrect = ans === q.answer;
-    else {
-      const sel = (ans as number[]).sort();
-      const cor = (q.answer as number[]).sort();
-      isCorrect = JSON.stringify(sel) === JSON.stringify(cor);
-    }
-    if (isCorrect) domainMap[q.domain].correct++;
-  });
-
-  const passed = overallPct >= 75;
+    setExpanded(newExpanded);
+  };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-      {/* Hero result */}
-      <div className={`text-center py-8 rounded-xl border ${passed ? 'border-success/30 bg-success/5' : 'border-destructive/30 bg-destructive/5'}`}>
-        <Trophy className={`h-12 w-12 mx-auto mb-3 ${passed ? 'text-success' : 'text-destructive'}`} />
-        <h2 className="text-3xl font-bold font-mono text-foreground">{overallPct}%</h2>
-        <p className={`text-lg font-semibold mt-1 ${passed ? 'text-success' : 'text-destructive'}`}>
-          {passed ? 'PASSED' : 'NEEDS IMPROVEMENT'}
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">Passing score: 75%</p>
+    <div className="results-screen">
+      <div className="results-header">
+        <h1>📊 Exam Results</h1>
+        <button onClick={onRetake} className="btn-retake">🔄 Retake Exam</button>
       </div>
 
-      {/* Score cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ScoreCard icon={<Target className="h-5 w-5 text-primary" />} label="PBQ Score" value={`${pbqCorrect}/${pbqAnswered} answered`} />
-        <ScoreCard icon={<BarChart3 className="h-5 w-5 text-accent" />} label="MCQ Score" value={`${mcqCorrect}/${mcqAnswered} answered`} />
+      <div className="score-card">
+        <div className="score-value">{score}</div>
+        <div className="score-label">out of 900</div>
+        <div className="score-status">{score >= 750 ? '✅ PASSED' : '❌ FAILED'}</div>
+        <div className="passing-score">Passing score: 750</div>
       </div>
 
-      {/* Domain breakdown */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h3 className="text-sm font-mono text-muted-foreground uppercase tracking-wider mb-4">Domain Breakdown</h3>
-        <div className="space-y-3">
-          {Object.entries(domainMap).map(([domain, { correct, total }]) => {
-            const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
-            return (
-              <div key={domain}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-foreground">{domain}</span>
-                  <span className="font-mono text-muted-foreground">{correct}/{total} ({pct}%)</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${pct >= 75 ? 'bg-success' : pct >= 50 ? 'bg-warning' : 'bg-destructive'}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+      <div className="stats-grid">
+        <div className="stat-card correct">
+          <div className="stat-value">{correctCount}/{totalQuestions}</div>
+          <div className="stat-label">Correct</div>
+        </div>
+        <div className="stat-card wrong">
+          <div className="stat-value">{wrongCount}/{totalQuestions}</div>
+          <div className="stat-label">Wrong</div>
+        </div>
+        <div className="stat-card percentage">
+          <div className="stat-value">{Math.round((correctCount / totalQuestions) * 100)}%</div>
+          <div className="stat-label">Accuracy</div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function ScoreCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
-      {icon}
-      <div>
-        <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className="text-xl font-bold font-mono text-foreground">{value}</p>
+      <div className="review-filters">
+        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>
+          All ({questions.length})
+        </button>
+        <button className={filter === 'wrong' ? 'active' : ''} onClick={() => setFilter('wrong')}>
+          Wrong ({wrongCount})
+        </button>
+        <button className={filter === 'correct' ? 'active' : ''} onClick={() => setFilter('correct')}>
+          Correct ({correctCount})
+        </button>
+      </div>
+
+      <div className="expand-controls">
+        <button onClick={() => setExpanded(new Set(filteredQuestions.map((_, i) => i)))}>
+          Expand All
+        </button>
+        <button onClick={() => setExpanded(new Set())}>Collapse All</button>
+      </div>
+
+      <div className="questions-review">
+        {filteredQuestions.map((q, index) => {
+          const isExpanded = expanded.has(index);
+          return (
+            <div key={q.id || index} className={`question-review ${q.isCorrect ? 'correct' : 'wrong'}`}>
+              <div className="question-header" onClick={() => toggleExpand(index)}>
+                <span className="question-number">Question {index + 1}</span>
+                {q.isPBQ && <span className="pbq-badge">🔥 PBQ</span>}
+                <span className="domain-badge">{q.domain}</span>
+                <span className="status-icon">{q.isCorrect ? '✅' : '❌'}</span>
+                <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
+              </div>
+
+              {isExpanded && (
+                <div className="question-body">
+                  <div className="question-text">
+                    <strong>Question:</strong>
+                    <p>{q.questionText || q.question}</p>
+                  </div>
+
+                  <div className={`your-answer ${q.isCorrect ? 'correct-answer' : 'wrong-answer'}`}>
+                    <strong>Your Answer:</strong>
+                    <div className="answer-content">
+                      {Array.isArray(q.userAnswer) ? q.userAnswer.join(', ') : q.userAnswer || 'No answer'}
+                    </div>
+                    {!q.isCorrect && <div className="wrong-indicator">❌ Incorrect</div>}
+                  </div>
+
+                  {!q.isCorrect && (
+                    <div className="correct-answer-display">
+                      <strong>Correct Answer:</strong>
+                      <div className="answer-content">
+                        {Array.isArray(q.correctAnswer) ? q.correctAnswer.join(', ') : q.correctAnswer}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="explanation-section">
+                    <strong>📖 Explanation:</strong>
+                    <p className="explanation-text">{q.explanation || 'No explanation available'}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
-}
+};
