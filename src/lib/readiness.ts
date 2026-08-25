@@ -4,6 +4,7 @@
  */
 
 import { loadHistory, loadQuestionStats, getWeakDomains, type ExamAttempt } from './examHistory';
+import { DOMAIN_LABELS } from '@/data/questions';
 
 export interface ReadinessBreakdown {
   overall: number;
@@ -18,13 +19,12 @@ export interface ReadinessBreakdown {
   recommendations: string[];
 }
 
-const ALL_DOMAINS = [
-  'General Security Concepts', 'Identity and Access Management', 'Network Security',
-  'Cryptography', 'Threats & Vulnerabilities', 'Security Architecture',
-  'Cloud Security', 'Incident Response', 'Security Operations',
-  'Application Security', 'Governance & Compliance', 'Mobile Device Management',
-  'VPN & Remote Access', 'Firewall & ACL Configuration', 'Network Reconnaissance',
-];
+// The exam only has 5 official SY0-701 domains (D1–D5). This used to be a
+// stale, unrelated 15-item list that never matched the domain strings actually
+// stored in question stats (which are DOMAIN_LABELS values) — so coverage was
+// silently capped at 5/15 = 33%, no matter how many domains you'd actually
+// covered. Deriving it from DOMAIN_LABELS keeps the two in sync by construction.
+const ALL_DOMAINS = Object.values(DOMAIN_LABELS);
 
 export function calculateReadiness(): ReadinessBreakdown {
   const history = loadHistory();

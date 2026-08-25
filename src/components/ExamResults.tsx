@@ -5,6 +5,7 @@ import type { ScoreResult } from '@/lib/examEngine';
 import type { MCQuestion, PBQuestion } from '@/data/questions';
 import { DOMAIN_LABELS } from '@/data/questions';
 import { isMCQCorrect, isPBQCorrect } from '@/lib/examEngine';
+import { PBQRenderer } from '@/components/PBQRenderer';
 
 interface ExamResultsProps {
   score: ScoreResult;
@@ -34,6 +35,7 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
         whyWrong: '',
         userAns: '',
         correctAns: '',
+        raw: q,
       })),
       ...mcqs.map((q, i) => {
         const a = mcqAnswers[q.id];
@@ -194,10 +196,23 @@ export function ExamResults({ score, pbqs, mcqs, pbqAnswers, mcqAnswers, onResta
                       <span className="hidden sm:inline text-[10px] text-muted-foreground font-mono">{item.domain.split(' ').slice(0,3).join(' ')}</span>
                       {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </button>
-                    {expanded && (
+                    {expanded && item.type === 'pbq' && (
+                      <div className="p-4 border-t border-border bg-card text-xs">
+                        {/* Full interactive breakdown: shows exactly which sub-tasks were right/wrong
+                            and what the correct value was for each, same renderer used during the exam. */}
+                        <PBQRenderer
+                          q={item.raw}
+                          ans={pbqAnswers[item.id]}
+                          onAns={() => {}}
+                          submitted={true}
+                          studyRevealed={false}
+                        />
+                      </div>
+                    )}
+                    {expanded && item.type === 'mcq' && (
                       <div className="p-3 border-t border-border bg-card text-xs space-y-1.5">
-                        {item.type === 'mcq' && !item.correct && <p className="text-destructive"><strong>Your answer:</strong> {item.userAns}</p>}
-                        {item.type === 'mcq' && !item.correct && <p className="text-success"><strong>Correct answer:</strong> {item.correctAns}</p>}
+                        {!item.correct && <p className="text-destructive"><strong>Your answer:</strong> {item.userAns}</p>}
+                        {!item.correct && <p className="text-success"><strong>Correct answer:</strong> {item.correctAns}</p>}
                         {!item.correct && item.whyWrong && (
                           <div className="flex items-start gap-1.5 text-destructive/90"><XCircle className="h-3 w-3 mt-0.5 flex-shrink-0" /><span><strong className="uppercase text-[9px] tracking-wider mr-1">Why incorrect:</strong>{item.whyWrong}</span></div>
                         )}

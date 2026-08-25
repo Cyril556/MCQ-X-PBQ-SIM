@@ -1,13 +1,41 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, GripVertical, AlertTriangle, Clock, Timer, Pause, Play, Shuffle, LogOut } from 'lucide-react';
+import { Flag, ChevronLeft, ChevronRight, ListChecks, CheckCircle2, XCircle, AlertTriangle, Clock, Timer, Pause, Play, Shuffle, LogOut, Lock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { MCQuestion, PBQuestion } from '@/data/questions';
 import { isMCQCorrect, isPBQCorrect, calculateScore, type ScoreResult } from '@/lib/examEngine';
 import { ExamResults } from '@/components/ExamResults';
+import { PBQRenderer } from '@/components/PBQRenderer';
 import { saveAttempt, type QuestionAttempt, type ExamAttempt } from '@/lib/examHistory';
 import { DOMAIN_LABELS } from '@/data/questions';
 
 type UnifiedQ = { kind: 'pbq'; data: PBQuestion } | { kind: 'mcq'; data: MCQuestion };
+
+/**
+ * Spread PBQs evenly across the MCQs instead of clustering them all at the
+ * front of the exam. Both inputs are assumed to already be independently
+ * shuffled; this only controls the interleaving positions.
+ */
+function interleavePbqs(pbqs: PBQuestion[], mcqs: MCQuestion[]): UnifiedQ[] {
+  if (pbqs.length === 0) return mcqs.map(q => ({ kind: 'mcq' as const, data: q }));
+  if (mcqs.length === 0) return pbqs.map(q => ({ kind: 'pbq' as const, data: q }));
+
+  const result: UnifiedQ[] = [];
+  const gap = mcqs.length / (pbqs.length + 1); // MCQs consumed between each PBQ
+  let pbqIdx = 0;
+  let mcqIdx = 0;
+  let nextPbqAt = gap;
+
+  while (pbqIdx < pbqs.length || mcqIdx < mcqs.length) {
+    const dueForPbq = pbqIdx < pbqs.length && (mcqIdx >= nextPbqAt || mcqIdx >= mcqs.length);
+    if (dueForPbq) {
+      result.push({ kind: 'pbq', data: pbqs[pbqIdx++] });
+      nextPbqAt += gap;
+    } else {
+      result.push({ kind: 'mcq', data: mcqs[mcqIdx++] });
+    }
+  }
+  return result;
+}
 
 interface NewExamEngineProps {
   pbqs: PBQuestion[];
@@ -22,15 +50,15 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   // Bumped by the Shuffle button to re-randomize question order + MCQ option order.
   const [shuffleNonce, setShuffleNonce] = useState(0);
 
-  // Real-exam ordering: ALL PBQs first, then MCQs. PBQs cannot be revisited
-  // once the candidate moves past the PBQ section (CompTIA behavior).
+  // PBQs are spread evenly across the exam (not clustered at the start) so the
+  // performance-based questions don't all land back-to-back. Each individual
+  // PBQ still locks once you move on from it — you just can't jump back to a
+  // PBQ you've already passed — which mirrors the real CompTIA "no return to
+  // PBQs" rule at per-question granularity instead of one big front section.
   const questions = useMemo<UnifiedQ[]>(() => {
     const shuffledMcqs = [...mcqs].sort(() => Math.random() - 0.5);
     const shuffledPbqs = [...pbqs].sort(() => Math.random() - 0.5);
-    return [
-      ...shuffledPbqs.map(q => ({ kind: 'pbq' as const, data: q })),
-      ...shuffledMcqs.map(q => ({ kind: 'mcq' as const, data: q })),
-    ];
+    return interleavePbqs(shuffledPbqs, shuffledMcqs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pbqs, mcqs, shuffleNonce]);
 
@@ -44,7 +72,8 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const [showNav, setShowNav] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showPbqLock, setShowPbqLock] = useState(false);
-  const [pbqSectionLocked, setPbqSectionLocked] = useState(false);
+  // Which PBQs (by id) have already been left and can no longer be revisited.
+  const [lockedPbqIds, setLockedPbqIds] = useState<Set<string>>(new Set());
   const [warned30, setWarned30] = useState(false);
   const [warned10, setWarned10] = useState(false);
   const [warningBanner, setWarningBanner] = useState<null | '30' | '10'>(null);
@@ -62,7 +91,9 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
 
   const cur = questions[idx];
   const qId = cur.kind === 'pbq' ? cur.data.id : cur.data.id;
-  // (PBQs are interleaved throughout `questions` — no section concept.)
+  // PBQs are interleaved throughout `questions` — there's no contiguous
+  // "PBQ section" anymore, so the lock is tracked per-question (lockedPbqIds)
+  // instead of by array position.
 
   // Timer logic with Pause
   useEffect(() => {
@@ -198,22 +229,28 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
   const goTo = (newIdx: number) => {
     if (isPaused) return;
     if (newIdx < 0 || newIdx >= questions.length) return;
-    // PBQ-first lock: once the candidate leaves the PBQ section, they cannot return.
-    if (!isStudyMode && pbqCount > 0) {
-      const leavingPbq = idx < pbqCount && newIdx >= pbqCount;
-      const enteringPbq = idx >= pbqCount && newIdx < pbqCount;
-      if (enteringPbq && pbqSectionLocked) return; // hard block
-      if (leavingPbq && !pbqSectionLocked) {
-        setShowPbqLock(true);
-        (window as any).__pendingIdx = newIdx;
-        return;
-      }
+    if (newIdx === idx) return;
+
+    const target = questions[newIdx];
+    // Per-question PBQ lock: once you leave a PBQ, you cannot come back to it
+    // (mirrors the real CompTIA "no return to PBQs" rule, applied per-question
+    // now that PBQs are spread throughout the exam instead of one front section).
+    if (!isStudyMode && target.kind === 'pbq' && lockedPbqIds.has(target.data.id)) {
+      return; // hard block — this PBQ was already left and is locked
+    }
+    const leavingUnlockedPbq = !isStudyMode && cur.kind === 'pbq' && !lockedPbqIds.has(cur.data.id);
+    if (leavingUnlockedPbq) {
+      setShowPbqLock(true);
+      (window as any).__pendingIdx = newIdx;
+      return;
     }
     setIdx(newIdx);
   };
 
   const confirmLeavePbqs = () => {
-    setPbqSectionLocked(true);
+    if (cur.kind === 'pbq') {
+      setLockedPbqIds(prev => new Set(prev).add(cur.data.id));
+    }
     setShowPbqLock(false);
     const pending = (window as any).__pendingIdx;
     if (typeof pending === 'number') setIdx(pending);
@@ -228,6 +265,7 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
     setPbqAnswers({});
     setMcqAnswers({});
     setFlags(new Set());
+    setLockedPbqIds(new Set());
     setQuestionTimes({});
     setQStartTime(Date.now());
   };
@@ -291,18 +329,18 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
         </DialogContent>
       </Dialog>
 
-      {/* PBQ-first lock confirmation */}
+      {/* Per-PBQ lock confirmation */}
       <Dialog open={showPbqLock} onOpenChange={setShowPbqLock}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Leave Performance-Based Section?</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Leave this Performance-Based Question?</DialogTitle>
             <DialogDescription>
-              Once you leave the PBQ section to begin the multiple-choice questions, you will <strong>not be able to return</strong> to the PBQs. This mirrors the real CompTIA exam.
+              Once you move on, you will <strong>not be able to return</strong> to this PBQ. This mirrors the real CompTIA exam.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
-            <button onClick={() => setShowPbqLock(false)} className="px-4 py-2 rounded-md border border-border text-sm">Stay on PBQs</button>
-            <button onClick={confirmLeavePbqs} className="px-4 py-2 rounded-md bg-warning text-warning-foreground font-bold text-sm">Continue to MCQs</button>
+            <button onClick={() => setShowPbqLock(false)} className="px-4 py-2 rounded-md border border-border text-sm">Stay on this PBQ</button>
+            <button onClick={confirmLeavePbqs} className="px-4 py-2 rounded-md bg-warning text-warning-foreground font-bold text-sm">Continue</button>
           </div>
         </DialogContent>
       </Dialog>
@@ -403,22 +441,25 @@ export function NewExamEngine({ pbqs, mcqs, durationMinutes, isStudyMode = false
                     : mcqAnswers[id] !== undefined;
                   const flagged = flags.has(id);
                   const isPBQ = q.kind === 'pbq';
+                  const locked = isPBQ && lockedPbqIds.has(id);
 
                   return (
                     <button
                       key={i}
                       onClick={() => goTo(i)}
-                      title={isPBQ ? `Q${i + 1} — Performance-Based` : `Q${i + 1}`}
+                      disabled={locked}
+                      title={locked ? `Q${i + 1} — Performance-Based (locked)` : isPBQ ? `Q${i + 1} — Performance-Based` : `Q${i + 1}`}
                       className={`relative aspect-square rounded-lg text-xs font-mono font-black transition-all ${
+                        locked ? 'bg-muted text-muted-foreground/40 border border-border cursor-not-allowed' :
                         i === idx ? 'bg-primary text-primary-foreground scale-110 shadow-lg z-10' :
                         answered ? (isPBQ ? 'bg-accent/15 text-accent border-2 border-accent/40' : 'bg-primary/10 text-primary border-2 border-primary/20') :
                         isPBQ ? 'bg-card text-foreground border-2 border-accent/40 hover:border-accent' :
                         'bg-card text-muted-foreground border border-border hover:border-primary/50'
                       }`}
                     >
-                      {i + 1}
-                      {isPBQ && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-accent" />}
-                      {flagged && <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full border-2 border-card" />}
+                      {locked ? <Lock className="h-3 w-3 mx-auto" /> : i + 1}
+                      {isPBQ && !locked && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-accent" />}
+                      {flagged && !locked && <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full border-2 border-card" />}
                     </button>
                   );
                 })}
@@ -521,8 +562,16 @@ function MCQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: MCQuestio
     if (q.type === 'single') {
       onAns(i);
     } else {
+      // Select-two: cap at 2 selections. Without this cap a candidate could pick
+      // 3+ options, which can never match the 2-item answer key and always scores
+      // wrong — that read as "multi-select is broken" even though the intent was
+      // just missing enforcement of "select exactly two".
       const prev = (ans as number[] | undefined) || [];
-      onAns(prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
+      if (prev.includes(i)) {
+        onAns(prev.filter(x => x !== i));
+      } else if (prev.length < 2) {
+        onAns([...prev, i]);
+      }
     }
   };
 
@@ -594,418 +643,3 @@ function MCQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: MCQuestio
     </div>
   );
 }
-
-export function PBQRenderer({ q, ans, onAns, submitted, studyRevealed }: { q: PBQuestion; ans: any; onAns: (a: any) => void; submitted: boolean; studyRevealed: boolean }) {
-  const showFeedback = submitted || studyRevealed;
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <h3 className="text-xl font-bold mb-2">{q.title}</h3>
-      <p className="text-muted-foreground text-sm mb-8 leading-relaxed italic">{q.scenario}</p>
-      
-      <div className="p-1">
-        {q.type === 'firewall' && <FirewallPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
-        {q.type === 'ordering' && <OrderingPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
-        {q.type === 'log-analysis' && <LogAnalysisPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
-        {q.type === 'matching' && <MatchingPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
-        {q.type === 'placement' && <PlacementPBQ q={q} ans={ans} onAns={onAns} show={showFeedback} />}
-      </div>
-
-      {showFeedback && (
-        <div className="mt-10 p-6 rounded-2xl bg-muted/30 border border-border animate-in zoom-in-95 duration-500">
-          <div className="flex items-center gap-2 mb-3 text-primary uppercase tracking-widest font-black text-[10px]">
-            <ListChecks className="h-4 w-4" />
-            Explanation
-          </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">{q.explanation}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FirewallPBQ({ q, ans, onAns, show }: { q: PBQFirewall; ans: string[]; onAns: (a: string[]) => void; show: boolean }) {
-  const curr = ans?.length ? ans : q.rules.map(() => '');
-  const set = (i: number, v: string) => {
-    const n = [...curr];
-    n[i] = v;
-    onAns(n);
-  };
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-      <table className="w-full text-left border-collapse">
-        <thead className="bg-muted/50 border-b border-border">
-          <tr>
-            {['Rule','Source','Dest','Port','Proto','Action'].map(h => (
-              <th key={h} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {q.rules.map((r, i) => {
-            const ok = show && curr[i] === q.correctActions[i];
-            const bad = show && curr[i] && curr[i] !== q.correctActions[i];
-            return (
-              <tr key={i} className="hover:bg-muted/30 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs">{r.ruleId}</td>
-                <td className="px-4 py-3 font-mono text-xs">{r.sourceIP}</td>
-                <td className="px-4 py-3 font-mono text-xs">{r.destIP}</td>
-                <td className="px-4 py-3 font-mono text-xs">{r.port}</td>
-                <td className="px-4 py-3 font-mono text-xs">{r.protocol}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1">
-                    {['ALLOW','DENY'].map(a => (
-                      <button
-                        key={a}
-                        onClick={() => !show && set(i, a)}
-                        className={`px-3 py-1 rounded-md text-[10px] font-black transition-all ${
-                          curr[i] === a 
-                            ? (a === 'ALLOW' ? 'bg-success text-success-foreground shadow-md' : 'bg-destructive text-destructive-foreground shadow-md') 
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        }`}
-                      >
-                        {a}
-                      </button>
-                    ))}
-                    {ok && <CheckCircle2 className="ml-2 h-4 w-4 text-success" />}
-                    {bad && <div className="ml-2 flex flex-col">
-                      <XCircle className="h-4 w-4 text-destructive" />
-                      <span className="text-[8px] font-bold text-success uppercase">{q.correctActions[i]}</span>
-                    </div>}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function OrderingPBQ({ q, ans, onAns, show }: { q: PBQOrdering; ans: string[]; onAns: (a: string[]) => void; show: boolean }) {
-  const [dragIdx, setDragIdx] = useState<number | null>(null);
-    const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
-    const initialOrder = useMemo(() => q.steps.map(s => s.label).sort(() => Math.random() - 0.5), [q.id]);
-
-    const currentOrder: string[] = ans?.length > 0 ? ans : initialOrder;
-  if (!ans?.length && q.steps.length > 0) {
-    setTimeout(() => onAns(currentOrder), 0);
-  }
-
-  const handleDrop = (targetIdx: number) => {
-    if (dragIdx === null || show) return;
-    const next = [...currentOrder];
-    const [moved] = next.splice(dragIdx, 1);
-    next.splice(targetIdx, 0, moved);
-    onAns(next);
-    setDragIdx(null);
-        setDropTargetIdx(null);
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-4">
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Drag to reorder steps</span>
-      </div>
-      {currentOrder.map((step, i) => {
-        const ci = q.steps.find(s => s.label === step);
-        const ok = show && ci && ci.correctPosition === i;
-        const bad = show && ci && ci.correctPosition !== i;
-        
-        return (
-          <div
-            key={step}
-            draggable={!show}
-            onDragStart={() => setDragIdx(i)}
-                        onDragEnd={() => { setDragIdx(null); setDropTargetIdx(null); }}
-                        onDragOver={e => { e.preventDefault(); setDropTargetIdx(i); }}
-                        onDragLeave={() => setDropTargetIdx(null)}
-            onDrop={e => { e.preventDefault(); handleDrop(i); }}
-            className={`flex items-center gap-4 px-5 py-4 rounded-2xl border text-sm transition-all shadow-sm ${
-              ok ? 'bg-success/10 border-success text-success' :
-              bad ? 'bg-destructive/10 border-destructive text-destructive' :
-                              dropTargetIdx === i && dragIdx !== i ? 'border-accent bg-accent/20 scale-[1.02]' :
-              dragIdx === i ? 'border-primary bg-primary/5 opacity-50 scale-95' :
-              'border-border bg-card text-foreground hover:border-primary/40'
-            } ${!show ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : ''}`}
-          >
-            <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono font-black text-xs ${
-              ok ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'
-            }`}>
-              {i+1}
-            </div>
-            <span className="flex-1 font-medium">{step}</span>
-            <GripVertical className="h-4 w-4 text-muted-foreground opacity-30" />
-            {ok && <CheckCircle2 className="h-4 w-4 text-success" />}
-            {bad && ci && <div className="text-right flex flex-col">
-              <XCircle className="h-4 w-4 text-destructive ml-auto" />
-              <span className="text-[10px] font-black text-success uppercase">Correct: #{ci.correctPosition+1}</span>
-            </div>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function LogAnalysisPBQ({ q, ans, onAns, show }: { q: PBQLogAnalysis; ans: any; onAns: (a: any) => void; show: boolean }) {
-  const current = ans || {};
-  const update = (key: string, value: any) => onAns({ ...current, [key]: value });
-
-  return (
-    <div className="space-y-8">
-      <div className="rounded-2xl border border-border bg-[#1e1e1e] p-6 shadow-xl">
-        <div className="flex items-center gap-2 mb-4 border-b border-white/10 pb-2">
-          <div className="w-3 h-3 rounded-full bg-destructive" />
-          <div className="w-3 h-3 rounded-full bg-warning" />
-          <div className="w-3 h-3 rounded-full bg-success" />
-          <span className="ml-2 text-[10px] font-mono text-white/40 font-bold uppercase tracking-widest">system_audit.log</span>
-        </div>
-        <div className="font-mono text-xs space-y-1 max-h-[250px] overflow-auto custom-scrollbar">
-          {q.logEntries.map((entry, i) => (
-            <div key={i} className="flex gap-4 hover:bg-white/5 py-0.5 group px-2 rounded">
-              <span className="text-white/20 select-none w-6 text-right group-hover:text-white/40">{i+1}</span>
-              <span className={`${entry.type === 'error' ? 'text-destructive' : entry.type === 'warning' ? 'text-warning' : 'text-white/70'}`}>
-                {entry.line}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">1. Attack Identification</label>
-          <select 
-            value={current.attackType || ''} 
-            onChange={e => update('attackType', e.target.value)}
-            disabled={show}
-            className="w-full px-4 py-3 text-sm bg-muted border border-border rounded-xl text-foreground focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
-          >
-            <option value="">Select attack type...</option>
-            {q.attackTypeOptions.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-          {show && (
-            <div className={`mt-3 text-xs font-black uppercase tracking-tighter ${current.attackType === q.correctAttackType ? 'text-success' : 'text-destructive'}`}>
-              {current.attackType === q.correctAttackType ? '✓ Correct Identification' : `✗ Correct: ${q.correctAttackType}`}
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3 block">2. Source of Threat</label>
-          <select 
-            value={current.sourceIP || ''} 
-            onChange={e => update('sourceIP', e.target.value)}
-            disabled={show}
-            className="w-full px-4 py-3 text-sm bg-muted border border-border rounded-xl text-foreground focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
-          >
-            <option value="">Select source IP...</option>
-            {q.sourceIPOptions.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-          {show && (
-            <div className={`mt-3 text-xs font-black uppercase tracking-tighter ${current.sourceIP === q.correctSourceIP ? 'text-success' : 'text-destructive'}`}>
-              {current.sourceIP === q.correctSourceIP ? '✓ Correct IP' : `✗ Correct: ${q.correctSourceIP}`}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="p-6 rounded-2xl bg-card border border-border shadow-sm">
-        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 block">3. Immediate Mitigation Action</label>
-        <div className="grid gap-3">
-          {q.responseOptions.map((opt, i) => {
-            const sel = current.response === i;
-            const correct = i === q.correctResponse;
-            let cls = 'bg-muted/50 border-border text-foreground hover:border-primary/40';
-            
-            if (show && sel && correct) cls = 'bg-success/10 border-success text-success';
-            else if (show && sel && !correct) cls = 'bg-destructive/10 border-destructive text-destructive';
-            else if (show && !sel && correct) cls = 'bg-success/5 border-success/50 text-success';
-            else if (sel) cls = 'bg-primary/10 border-primary text-foreground';
-
-            return (
-              <button
-                key={i}
-                onClick={() => !show && update('response', i)}
-                disabled={show}
-                className={`flex items-center gap-4 px-5 py-4 rounded-xl border text-sm text-left transition-all font-medium ${cls}`}
-              >
-                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono font-black text-xs ${sel ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/20 text-muted-foreground'}`}>
-                  {String.fromCharCode(65+i)}
-                </div>
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MatchingPBQ({ q, ans, onAns, show }: { q: PBQMatching; ans: Record<string, string>; onAns: (a: Record<string, string>) => void; show: boolean }) {
-  const [dragItem, setDragItem] = useState<string | null>(null);
-  const handleDrop = (right: string) => {
-    if (!dragItem || show) return;
-    onAns({...ans, [dragItem]: right});
-    setDragItem(null);
-  };
-
-  const unassigned = q.items.filter(it => !Object.keys(ans || {}).includes(it.left));
-
-  return (
-    <div className="space-y-10">
-      <div>
-        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-          <GripVertical className="h-3 w-3" />
-          Available Items
-        </h4>
-        <div className="flex flex-wrap gap-3 p-6 rounded-2xl bg-muted/30 border-2 border-dashed border-border min-h-[80px]">
-          {unassigned.map(it => (
-            <div
-              key={it.left}
-              draggable={!show}
-              onDragStart={() => setDragItem(it.left)}
-              onDragEnd={() => setDragItem(null)}
-              className={`px-4 py-2 rounded-xl border border-border bg-card text-xs font-bold text-foreground shadow-sm transition-all ${
-                !show ? 'cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-md' : ''
-              } ${dragItem === it.left ? 'opacity-50 scale-95' : ''}`}
-            >
-              {it.left}
-            </div>
-          ))}
-          {unassigned.length === 0 && !show && <div className="text-xs font-bold text-success uppercase tracking-widest m-auto">All items assigned ✓</div>}
-        </div>
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        {q.rightOptions.map(right => {
-          const assigned = q.items.filter(it => ans?.[it.left] === right);
-          return (
-            <div 
-              key={right}
-              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/5', 'border-primary/50'); }}
-              onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); }}
-              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); handleDrop(right); }}
-              className="group border-2 border-border rounded-2xl p-5 min-h-[120px] transition-all bg-card hover:shadow-lg"
-            >
-              <h5 className="text-xs font-black uppercase tracking-widest text-primary mb-4 border-b border-primary/10 pb-2">{right}</h5>
-              <div className="space-y-2">
-                {assigned.map(it => {
-                  const ok = show && it.correctRight === right;
-                  const bad = show && it.correctRight !== right;
-                  return (
-                    <div key={it.left} className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                      ok ? 'bg-success/10 border-success/50 text-success' : 
-                      bad ? 'bg-destructive/10 border-destructive/50 text-destructive' : 
-                      'bg-muted/50 border-border'
-                    }`}>
-                      {it.left}
-                      {!show && (
-                        <button 
-                          onClick={() => {
-                            const n = {...ans};
-                            delete n[it.left];
-                            onAns(n);
-                          }}
-                          className="p-1 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                      {ok && <CheckCircle2 className="h-3.5 w-3.5" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PlacementPBQ({ q, ans, onAns, show }: { q: PBQPlacement; ans: Record<string, string>; onAns: (a: Record<string, string>) => void; show: boolean }) {
-  const [dragItem, setDragItem] = useState<string | null>(null);
-  const handleDrop = (zone: string) => {
-    if (!dragItem || show) return;
-    onAns({...ans, [dragItem]: zone});
-    setDragItem(null);
-  };
-
-  const unassigned = q.items.filter(it => !Object.keys(ans || {}).includes(it.label));
-
-  return (
-    <div className="space-y-10">
-      <div>
-        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-          <GripVertical className="h-3 w-3" />
-          Components to Place
-        </h4>
-        <div className="flex flex-wrap gap-2 p-6 rounded-2xl bg-muted/30 border-2 border-dashed border-border min-h-[80px]">
-          {unassigned.map(it => (
-            <div
-              key={it.label}
-              draggable={!show}
-              onDragStart={() => setDragItem(it.label)}
-              onDragEnd={() => setDragItem(null)}
-              className={`px-3 py-1.5 rounded-lg border border-border bg-card text-[10px] font-black text-foreground shadow-sm transition-all ${
-                !show ? 'cursor-grab active:cursor-grabbing hover:border-primary/50' : ''
-              } ${dragItem === it.label ? 'opacity-50 scale-95' : ''}`}
-            >
-              {it.label}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-        {q.zones.map(zone => {
-          const here = q.items.filter(it => ans?.[it.label] === zone);
-          return (
-            <div 
-              key={zone}
-              onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/5', 'border-primary/50'); }}
-              onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); }}
-              onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove('bg-primary/5', 'border-primary/50'); handleDrop(zone); }}
-              className="border-2 border-border border-dashed rounded-2xl p-5 min-h-[140px] transition-all bg-card/50 flex flex-col"
-            >
-              <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2 text-center">{zone}</h5>
-              <div className="flex-1 flex flex-col gap-2">
-                {here.map(it => {
-                  const ok = show && it.correctZone === zone;
-                  const bad = show && it.correctZone !== zone;
-                  return (
-                    <div key={it.label} className={`flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-black border transition-all ${
-                      ok ? 'bg-success/10 border-success/50 text-success' : 
-                      bad ? 'bg-destructive/10 border-destructive/50 text-destructive' : 
-                      'bg-card border-border shadow-sm'
-                    }`}>
-                      {it.label}
-                      {!show && (
-                        <button onClick={() => {
-                          const n = {...ans};
-                          delete n[it.label];
-                          onAns(n);
-                        }} className="text-muted-foreground hover:text-destructive">
-                          <XCircle className="h-3 w-3" />
-                        </button>
-                      )}
-                      {ok && <CheckCircle2 className="h-3 w-3" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-import type { PBQFirewall, PBQOrdering, PBQLogAnalysis, PBQMatching, PBQPlacement } from '@/data/questions';

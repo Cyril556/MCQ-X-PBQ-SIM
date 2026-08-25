@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ListChecks, LogOut, Filter, RotateCcw, CheckCircle2, XCircle, Trophy, Eye, EyeOff } from 'lucide-react';
 import { pbqBank, DOMAIN_LABELS, type PBQuestion, type Domain } from '@/data/questions';
 import { isPBQCorrect } from '@/lib/examEngine';
-import { PBQRenderer } from '@/components/NewExamEngine';
+import { PBQRenderer } from '@/components/PBQRenderer';
 
 type PBQType = PBQuestion['type'];
 
